@@ -8,6 +8,7 @@ from django.forms import forms
 from django.template.defaultfilters import filesizeformat
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text
+from django.db import models
 
 try:
     from sorl.thumbnail import ImageField as OriginImageField
@@ -87,3 +88,22 @@ class FileField(RestrictedFileFieldMixin, OriginFileField):
 
 class ImageField(RestrictedFileFieldMixin, OriginImageField):
     pass
+
+
+class CharNullField(SouthMixin, models.CharField):
+    description = "CharField that stores NULL but returns ''"
+    __metaclass__ = models.SubfieldBase
+
+    def to_python(self, value):
+        if isinstance(value, models.CharField):
+            return value
+        if value == None:
+            return ""
+        else:
+            return value
+
+    def get_prep_value(self, value):
+        if value == "":
+            return None
+        else:
+            return value
