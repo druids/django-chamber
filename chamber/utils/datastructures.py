@@ -1,18 +1,27 @@
 from django.utils.datastructures import SortedDict
 
 
-class Enum(set):
+class AbstractEnum(object):
+
+    def _has_attr(self, name):
+        return name in self
+
+    def _get_attr_val(self, name):
+        return name
+
+    def __getattr__(self, name):
+        if self._has_attr(name):
+            return self._get_attr_val(name)
+        raise AttributeError('Missing attribute %s' % name)
+
+
+class Enum(AbstractEnum, set):
 
     def __init__(self, *items):
         super(Enum, self).__init__(items)
 
-    def __getattr__(self, name):
-        if name in self:
-            return name
-        raise AttributeError
 
-
-class NumEnum(dict):
+class NumEnum(AbstractEnum, dict):
 
     def __init__(self, *items):
         super(NumEnum, self).__init__()
@@ -22,35 +31,44 @@ class NumEnum(dict):
                 self[arg] = i
             i += 1
 
-    def __getattr__(self, name):
-        if name in self:
-            return self[name]
-        raise AttributeError
+    def _get_attr_val(self, name):
+        return self[name]
 
 
-class ChoicesEnum(SortedDict):
+class AbstractChoicesEnum(object):
+
+    def _get_labels_dict(self):
+        return dict(self._get_choices())
+
+    def _get_choices(self):
+        raise NotImplementedError
+        
+    @property
+    def choices(self):
+        return self._get_choices()
+
+    def get_label(self, name):
+        labels = dict(self._get_choices())
+        if name in labels:
+            return labels[name]
+        raise AttributeError('Missing label with index %s' % name)
+
+
+class ChoicesEnum(AbstractChoicesEnum, AbstractEnum, SortedDict):
 
     def __init__(self, *items):
         super(ChoicesEnum, self).__init__()
         for key, val in items:
             self[key] = val
 
-    def __getattr__(self, name):
-        if name in self:
-            return name
-        raise AttributeError
-
-    def get_label(self, name):
-        if name in self:
-            return self[name]
-        raise AttributeError
-
-    @property
-    def choices(self):
+    def _get_choices(self):
         return self.items()
 
+    def _get_labels_dict(self):
+        raise self
 
-class ChoicesNumEnum(SortedDict):
+
+class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum, SortedDict):
 
     def __init__(self, *items):
         super(ChoicesNumEnum, self).__init__()
@@ -70,16 +88,8 @@ class ChoicesNumEnum(SortedDict):
                 raise ValueError('Index %s already exists, please renumber choices')
             self[key] = (i, val)
 
-    def __getattr__(self, name):
-        if name in self:
-            return self[name][0]
-        raise AttributeError
+    def _get_attr_val(self, name):
+        return self[name][0]
 
-    def get_label(self, i):
-        if i in dict(self.values()):
-            return self[i]
-        raise AttributeError
-
-    @property
-    def choices(self):
+    def _get_choices(self):
         return self.values()
