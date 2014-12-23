@@ -1,18 +1,29 @@
 from django.utils.datastructures import SortedDict
 
 
-class Enum(set):
-
-    def __init__(self, *items):
-        super(Enum, self).__init__(items)
+class AbstractEnum(object):
 
     def __getattr__(self, name):
         if name in self:
             return name
-        raise AttributeError
+        raise AttributeError('Missing attribute %s' % name)
 
 
-class NumEnum(dict):
+class AbstractEnumDict(object):
+
+    def get_label(self, name):
+        if name in self:
+            return self[name]
+        raise AttributeError('Missing attribute %s' % name)
+
+
+class Enum(set, AbstractEnum):
+
+    def __init__(self, *items):
+        super(Enum, self).__init__(items)
+
+
+class NumEnum(dict, AbstractEnum, AbstractEnumDict):
 
     def __init__(self, *items):
         super(NumEnum, self).__init__()
@@ -23,27 +34,15 @@ class NumEnum(dict):
             i += 1
 
     def __getattr__(self, name):
-        if name in self:
-            return self[name]
-        raise AttributeError
+        return super(AbstractEnumDict).get_label(name)
 
 
-class ChoicesEnum(SortedDict):
+class ChoicesEnum(SortedDict, AbstractEnum, AbstractEnumDict):
 
     def __init__(self, *items):
         super(ChoicesEnum, self).__init__()
         for key, val in items:
             self[key] = val
-
-    def __getattr__(self, name):
-        if name in self:
-            return name
-        raise AttributeError
-
-    def get_label(self, name):
-        if name in self:
-            return self[name]
-        raise AttributeError
 
     @property
     def choices(self):
@@ -67,18 +66,18 @@ class ChoicesNumEnum(SortedDict):
                 raise ValueError('Wrong input data format')
 
             if i in (j for j, _ in self.values()):
-                raise ValueError('Index %s already exists, please renumber choices')
+                raise ValueError('Index %s already exists, please renumber choices' % i)
             self[key] = (i, val)
 
     def __getattr__(self, name):
         if name in self:
             return self[name][0]
-        raise AttributeError
+        raise AttributeError('Missing attribute %s' % name)
 
     def get_label(self, i):
         if i in dict(self.values()):
             return self[i]
-        raise AttributeError
+        raise AttributeError('Missing label for index %s' % i)
 
     @property
     def choices(self):
