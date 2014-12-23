@@ -1,14 +1,6 @@
 from django.utils.datastructures import SortedDict
 
 
-class SmartDict(SortedDict):
-
-    def __getattr__(self, name):
-        if name in self:
-            return self[name]
-        raise AttributeError
-
-
 class Enum(set):
 
     def __init__(self, *items):
@@ -20,10 +12,10 @@ class Enum(set):
         raise AttributeError
 
 
-class NumeEnum(dict):
+class NumEnum(dict):
 
     def __init__(self, *items):
-        super(NumeEnum, self).__init__()
+        super(NumEnum, self).__init__()
         i = 1
         for arg in items:
             if arg is not None:
