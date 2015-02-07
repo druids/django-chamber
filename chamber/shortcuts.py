@@ -16,3 +16,7 @@ def get_object_or_404(klass, *args, **kwargs):
         return queryset.get(*args, **kwargs)
     except (queryset.model.DoesNotExist, ValueError):
         raise Http404
+
+
+def distinct_field(klass, *args, **kwargs):
+    return _get_queryset(klass).order_by().values_list(*args, **kwargs).distinct()
