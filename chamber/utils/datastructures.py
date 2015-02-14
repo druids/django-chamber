@@ -42,10 +42,14 @@ class AbstractChoicesEnum(object):
 
     def _get_choices(self):
         raise NotImplementedError
-        
+
     @property
     def choices(self):
         return self._get_choices()
+
+    @property
+    def all(self):
+        return (key for key, _ in self._get_choices())
 
     def get_label(self, name):
         labels = dict(self._get_choices())
