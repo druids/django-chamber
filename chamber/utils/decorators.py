@@ -8,7 +8,9 @@ class classproperty(object):
 
 
 def singleton(klass):
-
+    """
+    Create singleton from class
+    """
     instances = {}
 
     def getinstance(*args, **kwargs):
@@ -17,3 +19,12 @@ def singleton(klass):
         return instances[klass]
     return getinstance
 
+
+def short_description(description):
+    """
+    Sets 'short_description' attribute (this attribute is used by list_display and formulars).
+    """
+    def decorator(func):
+        func.short_description = description
+        return func
+    return decorator
