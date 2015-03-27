@@ -18,13 +18,3 @@ def singleton(klass):
             instances[klass] = klass(*args, **kwargs)
         return instances[klass]
     return getinstance
-
-
-def short_description(description):
-    """
-    Sets 'short_description' attribute (this attribute is used by list_display and formulars).
-    """
-    def decorator(func):
-        func.short_description = description
-        return func
-    return decorator
