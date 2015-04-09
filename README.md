@@ -64,7 +64,7 @@ Python's `dict` with [`AbstractEnum`](#chamberutilsdatastructuresabstractenum) b
 
 #### `chamber.utils.datastructures.AbstractChoicesEnum`
 
-Base choices class (as used in field's choices parameters).
+Base choices class (as used in Model field's `choices` argument).
 
 #### `chamber.utils.datastructures.ChoicesEnum`
 
