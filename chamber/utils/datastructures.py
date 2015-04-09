@@ -71,6 +71,9 @@ class ChoicesEnum(AbstractChoicesEnum, AbstractEnum, SortedDict):
     def _get_labels_dict(self):
         raise self
 
+    def _get_attr_val(self, name):
+        return self[name]
+
 
 class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum, SortedDict):
 
