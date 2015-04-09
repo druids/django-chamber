@@ -22,7 +22,7 @@ Mixin for automatic South migration of custom model fields.
 
 #### `chamber.models.fields.DecimalField`
 
-`django.db.models.DecimalField` with `step`, `min` and `max` parameters. Uses [`chamber.forms.fields.DecimalField`](#chamber.forms.fields.decimalfield) as default form field.
+`django.db.models.DecimalField` with `step`, `min` and `max` parameters. Uses [`chamber.forms.fields.DecimalField`](#chamberformsfieldsdecimalfield) as default form field.
 
 #### `chamber.models.fields.RestrictedFileFieldMixin`
 
@@ -33,11 +33,11 @@ Maximum upload size can be specified in project settings under `MAX_FILE_UPLOAD_
 
 #### `chamber.models.fields.FileField`
 
-`django.db.models.FileField` with [`RestrictedFileFieldMixin`](#chamber.models.fields.restrictedfilefieldmixin) options.
+`django.db.models.FileField` with [`RestrictedFileFieldMixin`](#chambermodelsfieldsrestrictedfilefieldmixin) options.
 
 #### `chamber.models.fields.ImageField`
 
-`sorl.thumbnail.ImageField` (fallback to `django.db.models.ImageField`) with [`RestrictedFileFieldMixin`](#chamber.models.fields.restrictedfilefieldmixin) options.
+`sorl.thumbnail.ImageField` (fallback to `django.db.models.ImageField`) with [`RestrictedFileFieldMixin`](#chambermodelsfieldsrestrictedfilefieldmixin) options.
 
 #### `chamber.models.fields.CharNullField`
 
@@ -51,11 +51,11 @@ Base enumeration class with controlled `__getattr__`.
 
 #### `chamber.utils.datastructures.Enum`
 
-Python's `set` with [`AbstractEnum`](#chamber.utils.datastructures.abstractenum) behaviour.
+Python's `set` with [`AbstractEnum`](#chamberutilsdatastructuresabstractenum) behaviour.
 
 #### `chamber.utils.datastructures.NumEnum`
 
-Python's `dict` with [`AbstractEnum`](#chamber.utils.datastructures.abstractenum) behaviour.
+Python's `dict` with [`AbstractEnum`](#chamberutilsdatastructuresabstractenum) behaviour.
 
 ```
 >>> NumEnum('a', 'b')
@@ -68,7 +68,7 @@ Base choices class (as used in field's choices parameters).
 
 #### `chamber.utils.datastructures.ChoicesEnum`
 
-`django.utils.datastructures.SortedDict` with [`AbstractEnum`](#chamber.utils.datastructures.abstractenum) and [`AbstractChoicesEnum`](#chamber.utils.datastructures.abstractenum) behaviour. Useful for string based choices.
+`django.utils.datastructures.SortedDict` with [`AbstractEnum`](#chamberutilsdatastructuresabstractenum) and [`AbstractChoicesEnum`](#chamberutilsdatastructuresabstractenum) behaviour. Useful for string based choices.
 
 ```
 >>> enum = ChoicesEnum(('OK', 'ok'), ('KO', 'ko'))
@@ -82,7 +82,7 @@ Base choices class (as used in field's choices parameters).
 
 #### `chamber.utils.datastructures.ChoicesNumEnum`
 
-`django.utils.datastructures.SortedDict` with [`AbstractEnum`](#chamber.utils.datastructures.abstractenum) and [`AbstractChoicesEnum`](#chamber.utils.datastructures.abstractenum) behaviour. Useful for integer based choices.
+`django.utils.datastructures.SortedDict` with [`AbstractEnum`](#chamberutilsdatastructuresabstractenum) and [`AbstractChoicesEnum`](#chamberutilsdatastructuresabstractenum) behaviour. Useful for integer based choices.
 
 ```
 >>> enum = ChoicesNumEnum(('OK', 'ok', 1), ('KO', 'ko', 2))
@@ -200,11 +200,11 @@ datetime.datetime(2014, 2, 6, 15, 56, 16, 727000, tzinfo=<UTC>)
 
 #### `chamber.shortcuts.filter_by_date`
 
-Shortcut for [`chamber.shortcuts.filter_or_exclude_by_date`](#chamber.shortcuts.filter_or_exclude_by_date) with first parameter False.
+Shortcut for [`chamber.shortcuts.filter_or_exclude_by_date`](#chambershortcutsfilter_or_exclude_by_date) with first parameter False.
 
 #### `chamber.shortcuts.exclude_by_date`
 
-Shortcut for [`chamber.shortcuts.filter_or_exclude_by_date`](#chamber.shortcuts.filter_or_exclude_by_date) with first parameter True.
+Shortcut for [`chamber.shortcuts.filter_or_exclude_by_date`](#chambershortcutsfilter_or_exclude_by_date) with first parameter True.
 
 
 ## License
