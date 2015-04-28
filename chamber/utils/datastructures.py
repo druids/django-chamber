@@ -4,7 +4,7 @@ from django.utils.datastructures import SortedDict
 class AbstractEnum(object):
 
     def _has_attr(self, name):
-        return name in self
+        return name in self.container
 
     def _get_attr_val(self, name):
         return name
@@ -15,24 +15,29 @@ class AbstractEnum(object):
         raise AttributeError('Missing attribute %s' % name)
 
 
-class Enum(AbstractEnum, set):
+class Enum(AbstractEnum):
 
     def __init__(self, *items):
-        super(Enum, self).__init__(items)
+        self.container = set(items)
+        super(Enum, self).__init__()
+
+    def __iter__(self):
+        return self.container.__iter__()
 
 
-class NumEnum(AbstractEnum, dict):
+class NumEnum(AbstractEnum):
 
     def __init__(self, *items):
+        self.container = dict()
         super(NumEnum, self).__init__()
         i = 1
         for arg in items:
             if arg is not None:
-                self[arg] = i
+                self.container[arg] = i
             i += 1
 
     def _get_attr_val(self, name):
-        return self[name]
+        return self.container[name]
 
 
 class AbstractChoicesEnum(object):
@@ -58,23 +63,25 @@ class AbstractChoicesEnum(object):
         raise AttributeError('Missing label with index %s' % name)
 
 
-class ChoicesEnum(AbstractChoicesEnum, AbstractEnum, SortedDict):
+class ChoicesEnum(AbstractChoicesEnum, AbstractEnum):
 
     def __init__(self, *items):
+        self.container = SortedDict()
         super(ChoicesEnum, self).__init__()
         for key, val in items:
-            self[key] = val
+            self.container[key] = val
 
     def _get_choices(self):
-        return self.items()
+        return self.container.items()
 
     def _get_labels_dict(self):
         raise self
 
 
-class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum, SortedDict):
+class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
 
     def __init__(self, *items):
+        self.container = SortedDict()
         super(ChoicesNumEnum, self).__init__()
         i = 0
         for item in items:
@@ -88,12 +95,12 @@ class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum, SortedDict):
             else:
                 raise ValueError('Wrong input data format')
 
-            if i in (j for j, _ in self.values()):
+            if i in (j for j, _ in self.container.values()):
                 raise ValueError('Index %s already exists, please renumber choices')
-            self[key] = (i, val)
+            self.container[key] = (i, val)
 
     def _get_attr_val(self, name):
-        return self[name][0]
+        return self.container[name][0]
 
     def _get_choices(self):
-        return self.values()
+        return self.container.values()
