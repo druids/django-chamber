@@ -75,10 +75,10 @@ class ChoicesEnum(AbstractChoicesEnum, AbstractEnum):
         return self.container.items()
 
     def _get_labels_dict(self):
-        raise self
+        return self.container
 
     def _get_attr_val(self, name):
-        return self[name]
+        return self.container[name]
 
 
 class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
