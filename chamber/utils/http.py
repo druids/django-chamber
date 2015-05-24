@@ -1,10 +1,11 @@
+from collections import OrderedDict
+
 from django.http.request import QueryDict
-from django.utils.datastructures import SortedDict
 from django.utils.encoding import force_text
 
 
 def query_string_from_dict(qs_dict):
-    qs_prepared_dict = SortedDict()
+    qs_prepared_dict = OrderedDict()
     for key, val in qs_dict.items():
         if isinstance(val, list):
             val = '[%s]' % ','.join([force_text(v) for v in val])

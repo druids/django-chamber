@@ -1,4 +1,4 @@
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 
 
 class AbstractEnum(object):
@@ -66,7 +66,7 @@ class AbstractChoicesEnum(object):
 class ChoicesEnum(AbstractChoicesEnum, AbstractEnum):
 
     def __init__(self, *items):
-        self.container = SortedDict()
+        self.container = OrderedDict()
         super(ChoicesEnum, self).__init__()
         for key, val in items:
             self.container[key] = val
@@ -81,7 +81,7 @@ class ChoicesEnum(AbstractChoicesEnum, AbstractEnum):
 class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
 
     def __init__(self, *items):
-        self.container = SortedDict()
+        self.container = OrderedDict()
         super(ChoicesNumEnum, self).__init__()
         i = 0
         for item in items:
