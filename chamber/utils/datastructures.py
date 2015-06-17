@@ -99,6 +99,14 @@ class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
                 raise ValueError('Index %s already exists, please renumber choices')
             self.container[key] = (i, val)
 
+    def get_name(self, i):
+        for key, number_and_val in self.container.items():
+            number, _ = number_and_val
+            if number == i:
+                return key
+
+        return None
+
     def _get_attr_val(self, name):
         return self.container[name][0]
 
