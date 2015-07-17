@@ -17,9 +17,9 @@ class Domain(object):
 
     @property
     def user_class(self):
-        from django.db.models.loading import get_model
+        from django.apps import apps
 
-        return get_model(*self.user_model.split('.', 1))
+        return apps.get_model(*self.user_model.split('.', 1))
 
 
 def get_current_domain():
