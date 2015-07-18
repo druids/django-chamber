@@ -104,7 +104,7 @@ class Comparator(object):
         raise NotImplementedError
 
 
-class AuditMixin(models.Model):
+class AuditModel(models.Model):
     created_at = models.DateTimeField(verbose_name=_('created at'), null=False, blank=False, auto_now_add=True)
     changed_at = models.DateTimeField(verbose_name=_('changed at'), null=False, blank=False, auto_now=True)
 
@@ -112,9 +112,7 @@ class AuditMixin(models.Model):
         abstract = True
 
 
-class SmartModel(ModelDiffMixin, ComparableModelMixin):
-    created_at = models.DateTimeField(verbose_name=_('created at'), null=False, blank=False, auto_now_add=True)
-    changed_at = models.DateTimeField(verbose_name=_('changed at'), null=False, blank=False, auto_now=True)
+class SmartModel(AuditModel):
 
     def full_clean(self, *args, **kwargs):
         errors = {}
