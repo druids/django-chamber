@@ -24,5 +24,6 @@ setup(
     ],
     install_requires = [
         'Django >= 1.6',
+        'Unidecode>=0.04.17',
     ],
 )
