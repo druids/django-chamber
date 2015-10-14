@@ -31,10 +31,15 @@ class NumEnum(AbstractEnum):
         self.container = dict()
         super(NumEnum, self).__init__()
         i = 1
-        for arg in items:
-            if arg is not None:
-                self.container[arg] = i
-            i += 1
+        for item in items:
+            if len(item) == 2:
+                key, i = item
+                if i in self.container.values():
+                    raise ValueError('Index %s already exists, please renumber choices' % i)
+                self.container[key] = i
+            else:
+                self.container[item] = i
+                i += 1
 
     def _get_attr_val(self, name):
         return self.container[name]
@@ -98,6 +103,12 @@ class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
             if i in (j for j, _ in self.container.values()):
                 raise ValueError('Index %s already exists, please renumber choices')
             self.container[key] = (i, val)
+
+    def get_name(self, i):
+        for key, (number, _) in self.container.items():
+            if number == i:
+                return key
+        return None
 
     def _get_attr_val(self, name):
         return self.container[name][0]
