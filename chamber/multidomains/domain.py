@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 class Domain(object):
 
     def __init__(self, name, protocol, hostname, urlconf, user_model, port=80):

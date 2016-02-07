@@ -3,7 +3,7 @@ import unicodedata
 from django.utils.functional import cached_property
 
 
-def remove_diacritics(string_with_diacritics):
+def remove_accent(string_with_diacritics):
     return unicodedata.normalize('NFKD', string_with_diacritics).encode('ASCII', 'ignore')
 
 

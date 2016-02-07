@@ -1,7 +1,6 @@
-try:
-    from urllib import urlencode
-except ImportError:
-    from urllib.parse import urlencode
+from __future__ import unicode_literals
+
+from six.moves.urllib.parse import urlencode
 
 from django.conf import settings
 from django.core import urlresolvers

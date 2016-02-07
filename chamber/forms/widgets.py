@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from django.forms.widgets import Widget
 from django.utils.safestring import mark_safe
 from django.utils.html import conditional_escape

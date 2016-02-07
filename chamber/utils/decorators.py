@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from functools import wraps
 
 from django.conf import settings
@@ -24,6 +26,7 @@ def singleton(klass):
             instances[klass] = klass(*args, **kwargs)
         return instances[klass]
     return getinstance
+
 
 def translation_activate_block(function=None, language=None):
     """
