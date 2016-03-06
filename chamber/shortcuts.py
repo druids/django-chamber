@@ -5,13 +5,14 @@ from datetime import date, datetime, time
 from django.http.response import Http404
 from django.shortcuts import _get_queryset
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 def get_object_or_none(klass, *args, **kwargs):
     queryset = _get_queryset(klass)
     try:
         return queryset.get(*args, **kwargs)
-    except (queryset.model.DoesNotExist, ValueError):
+    except (queryset.model.DoesNotExist, ValueError, ValidationError):
         return None
 
 
@@ -19,7 +20,7 @@ def get_object_or_404(klass, *args, **kwargs):
     queryset = _get_queryset(klass)
     try:
         return queryset.get(*args, **kwargs)
-    except (queryset.model.DoesNotExist, ValueError):
+    except (queryset.model.DoesNotExist, ValueError, ValidationError):
         raise Http404
 
 

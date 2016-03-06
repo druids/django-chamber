@@ -6,13 +6,10 @@ from django.conf import settings
 from django.utils import translation
 
 
-class classproperty(object):
+class classproperty(property):
 
-    def __init__(self, fget):
-        self.fget = fget
-
-    def __get__(self, owner_self, owner_cls):
-        return self.fget(owner_cls)
+    def __get__(self, cls, owner):
+        return self.fget.__get__(None, owner)()
 
 
 def singleton(klass):
@@ -25,7 +22,7 @@ def singleton(klass):
         if klass not in instances:
             instances[klass] = klass(*args, **kwargs)
         return instances[klass]
-    return getinstance
+    return wraps(klass)(getinstance)
 
 
 def translation_activate_block(function=None, language=None):

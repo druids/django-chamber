@@ -30,18 +30,21 @@ class Enum(AbstractEnum):
 class NumEnum(AbstractEnum):
 
     def __init__(self, *items):
-        self.container = dict()
+        self.container = OrderedDict()
         super(NumEnum, self).__init__()
-        i = 1
+        i = 0
         for item in items:
             if len(item) == 2:
                 key, i = item
-                if i in self.container.values():
-                    raise ValueError('Index %s already exists, please renumber choices' % i)
-                self.container[key] = i
+                if not isinstance(i, int):
+                    raise ValueError('Last value of item must by integer')
             else:
-                self.container[item] = i
+                key = item
                 i += 1
+
+            if i in self.container.values():
+                raise ValueError('Index %s already exists, please renumber choices')
+            self.container[key] = i
 
     def _get_attr_val(self, name):
         return self.container[name]
@@ -102,7 +105,7 @@ class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
             else:
                 raise ValueError('Wrong input data format')
 
-            if i in (j for j, _ in self.container.values()):
+            if i in {j for j, _ in self.container.values()}:
                 raise ValueError('Index %s already exists, please renumber choices')
             self.container[key] = (i, val)
 

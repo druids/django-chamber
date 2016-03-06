@@ -11,6 +11,40 @@ from django.utils.encoding import force_text
 from chamber.exceptions import PersistenceException
 
 
+class OptionsLazy(object):
+
+    def __init__(self, name, klass):
+        self.name = name
+        self.klass = klass
+
+    def __get__(self, instance=None, owner=None):
+        option = self.klass(owner)
+        setattr(owner, self.name, option)
+        return option
+
+
+class Options(object):
+
+    meta_name = 'SmartMeta'
+
+    def __init__(self, model):
+        self.model = model
+
+        self.clean_before_save = True
+        if hasattr(model, 'SmartMeta'):
+            self.clean_before_save = self._getattr('clean_before_save', self.clean_before_save)
+
+    def _getattr(self, name, default_value):
+        meta_models = [b for b in self.model.__mro__ if issubclass(b, models.Model)]
+        for model in meta_models:
+            meta = getattr(model, self.meta_name, None)
+            if meta:
+                value = getattr(meta, name, None)
+                if value is not None:
+                    return value
+        return default_value
+
+
 def model_to_dict(instance, fields=None, exclude=None):
     """
     The same implementation as django model_to_dict but editable fields are allowed
@@ -20,7 +54,7 @@ def model_to_dict(instance, fields=None, exclude=None):
     opts = instance._meta
     data = {}
     for f in opts.concrete_fields + opts.many_to_many:
-        if fields and not f.name in fields:
+        if fields and f.name not in fields:
             continue
         if exclude and f.name in exclude:
             continue
@@ -65,7 +99,7 @@ class ModelDiffMixin(object):
 
     @property
     def changed_fields(self):
-        return self.diff.keys()
+        return set(self.diff.keys())
 
     def get_field_diff(self, field_name):
         """
@@ -105,14 +139,16 @@ class Comparator(object):
 
 
 class AuditModel(models.Model):
-    created_at = models.DateTimeField(verbose_name=_('created at'), null=False, blank=False, auto_now_add=True)
-    changed_at = models.DateTimeField(verbose_name=_('changed at'), null=False, blank=False, auto_now=True)
+    created_at = models.DateTimeField(verbose_name=_('created at'), null=False, blank=False, auto_now_add=True,
+                                      db_index=True)
+    changed_at = models.DateTimeField(verbose_name=_('changed at'), null=False, blank=False, auto_now=True,
+                                      db_index=True)
 
     class Meta:
         abstract = True
 
 
-class SmartModel(AuditModel):
+class SmartModel(ModelDiffMixin, AuditModel):
 
     def full_clean(self, *args, **kwargs):
         errors = {}
@@ -127,25 +163,33 @@ class SmartModel(AuditModel):
             raise ValidationError(errors)
         super(SmartModel, self).full_clean(*args, **kwargs)
 
-    def pre_save(self, change, *args, **kwargs):
+    def pre_save(self, *args, **kwargs):
         pass
 
-    def save(self, *args, **kwargs):
+    def save(self, clean_before_save=None, force_insert=False, force_update=False, using=None,
+             update_fields=None, *args, **kwargs):
+        clean_before_save = self._smart_meta.clean_before_save if clean_before_save is None else clean_before_save
         change = bool(self.pk)
-        self.pre_save(change, *args, **kwargs)
-        try:
-            self.full_clean()
-        except ValidationError as er:
-            if hasattr(er, 'error_dict'):
-                raise PersistenceException(', '.join(
-                    ('%s: %s' % (key, ', '.join(map(force_text, val))) for key, val in er.message_dict.items())))
-            else:
-                raise PersistenceException(', '.join(map(force_text, er.messages)))
-        super(SmartModel, self).save(*args, **kwargs)
-        self.post_save(change, *args, **kwargs)
+        changed_fields = set(self.changed_fields)
+        self.pre_save(change, changed_fields, *args, **kwargs)
+        if clean_before_save:
+            try:
+                self.full_clean()
+            except ValidationError as er:
+                if hasattr(er, 'error_dict'):
+                    raise PersistenceException(', '.join(
+                        ('%s: %s' % (key, ', '.join(map(force_text, val))) for key, val in er.message_dict.items())))
+                else:
+                    raise PersistenceException(', '.join(map(force_text, er.messages)))
+        super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
+                                     update_fields=update_fields)
+        self.post_save(change, changed_fields, *args, **kwargs)
 
-    def post_save(self, change, *args, **kwargs):
+    def post_save(self, *args, **kwargs):
         pass
 
     class Meta:
         abstract = True
+
+opt_key = '_smart_meta'
+setattr(SmartModel, opt_key, OptionsLazy(opt_key, Options))

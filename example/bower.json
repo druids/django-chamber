@@ -1,0 +1,10 @@
+{
+    "name": "django-is-core.example",
+    "version": "0.15.0",
+    "dependencies": {
+        "closure-compiler": "http://dl.google.com/closure-compiler/compiler-20140303.zip",
+        "closure-library": "https://github.com/google/closure-library.git#f26bb3122769eb1b19c6fb5adbd9448e36996627",
+        "werkzeug": "http://github.com/LukasRychtecky/werkzeug.git#0.5.0",
+        "bootstrap-sass": "https://github.com/twbs/bootstrap-sass.git#3.1.1"
+    }
+}
