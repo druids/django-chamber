@@ -31,6 +31,14 @@ class Options(object):
         self.model = model
 
         self.clean_before_save = True
+        self.clean_after_save = False
+
+        self.clean_before_delete = False
+        self.clean_after_delete = False
+
+        self.atomic_save = False
+        self.atomic_delete = False
+
         if hasattr(model, 'SmartMeta'):
             self.clean_before_save = self._getattr('clean_before_save', self.clean_before_save)
 
@@ -166,8 +174,36 @@ class SmartModel(ModelDiffMixin, AuditModel):
     def pre_save(self, *args, **kwargs):
         pass
 
-    def save(self, clean_before_save=None, force_insert=False, force_update=False, using=None,
-             update_fields=None, *args, **kwargs):
+    def _clean_save(self):
+        self._persistence_clean()
+
+    def _clean_delete(self):
+        self._persistence_clean()
+
+    def _clean_pre_save(self):
+        self._clean_save()
+
+    def _clean_pre_delete(self):
+        self._clean_delete()
+
+    def _clean_post_save(self):
+        self._clean_save()
+
+    def _clean_post_delete(self):
+        self._clean_delete()
+
+    def _persistence_clean(self):
+        try:
+            self.full_clean()
+        except ValidationError as er:
+            if hasattr(er, 'error_dict'):
+                raise PersistenceException(', '.join(
+                    ('%s: %s' % (key, ', '.join(map(force_text, val))) for key, val in er.message_dict.items())))
+            else:
+                raise PersistenceException(', '.join(map(force_text, er.messages)))
+
+    def save(self, clean_before_save=None, clean_after_save=None, clean_before_delete=None, clean_after_delete=None,
+             force_insert=False, force_update=False, using=None, update_fields=None, *args, **kwargs):
         clean_before_save = self._smart_meta.clean_before_save if clean_before_save is None else clean_before_save
         change = bool(self.pk)
         changed_fields = set(self.changed_fields)
