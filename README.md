@@ -210,3 +210,13 @@ Shortcut for [`chamber.shortcuts.filter_or_exclude_by_date`](#chambershortcutsfi
 ## License
 
 See LICENSE file.
+
+## Development
+
+### Installation
+
+`make install`
+
+### Running tests
+
+`make tests`
