@@ -26,32 +26,6 @@ class ComparableModel(ComparableModelMixin, models.Model):
 
 class TestSmartModel(SmartModel):
     name = models.CharField(max_length=100)
-    number = models.IntegerField()
-
-    def clean_name(self):
-        if len(self.name) < 10:
-            raise ValidationError('Name must be longer than 10 chars')
-
-    def pre_save(self, changed, *args, **kwargs):
-        if not changed:
-            self.number = 11
-
-    def post_save(self, changed, changed_fields, *args, **kwargs):
-        if 'number' in changed_fields:
-            raise PersistenceException('number cannot be changed')
-
-    class Meta:
-        abstract = True
-
-
-class CleanedSmartModel(TestSmartModel):
-    pass
-
-
-class NotCleanedSmartModel(TestSmartModel):
-
-    class SmartMeta:
-        clean_before_save = False
 
 
 class BackendUser(AbstractBaseUser):
