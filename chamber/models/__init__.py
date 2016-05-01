@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import six
+
 from django.core.exceptions import ValidationError
 from django.db.models import CharField
 from django.db import models, transaction
@@ -22,35 +24,34 @@ class OptionsLazy(object):
         return option
 
 
-class Options(object):
+class OptionsBase(type):
+    def __new__(cls, *args, **kwargs):
+        new_class = super(OptionsBase, cls).__new__(cls, *args, **kwargs)
+        if new_class.model_class and new_class.meta_name:
+            setattr(new_class.model_class, new_class.meta_name, OptionsLazy(new_class.meta_name, new_class))
+        return new_class
 
-    meta_name = 'SmartMeta'
+
+class Options(six.with_metaclass(OptionsBase, object)):
+
+    meta_class_name = None
+    meta_name = None
+    attributes = None
+    model_class = None
 
     def __init__(self, model):
         self.model = model
 
-        self.is_cleaned_pre_save = True
-        self.is_cleaned_post_save = False
+        for key, default_value in self._get_attributes(model).items():
+            setattr(self, key, self._getattr(key, default_value))
 
-        self.is_cleaned_pre_delete = False
-        self.is_cleaned_post_delete = False
-
-        self.is_save_atomic = False
-        self.is_delete_atomic = False
-
-        if hasattr(model, 'SmartMeta'):
-            self.is_cleaned_pre_save = self._getattr('is_cleaned_pre_save', self.is_cleaned_pre_save)
-            self.is_cleaned_post_save = self._getattr('is_cleaned_post_save', self.is_cleaned_post_save)
-
-            self.is_cleaned_pre_delete = self._getattr('is_cleaned_pre_delete', self.is_cleaned_pre_delete)
-            self.is_cleaned_post_delete = self._getattr('is_cleaned_post_delete', self.is_cleaned_post_delete)
-            self.is_save_atomic = self._getattr('is_save_atomic', self.is_save_atomic)
-            self.is_delete_atomic = self._getattr('is_delete_atomic', self.is_delete_atomic)
+    def _get_attributes(self, model):
+        return self.attributes
 
     def _getattr(self, name, default_value):
         meta_models = [b for b in self.model.__mro__ if issubclass(b, models.Model)]
         for model in meta_models:
-            meta = getattr(model, self.meta_name, None)
+            meta = getattr(model, self.meta_class_name, None)
             if meta:
                 value = getattr(meta, name, None)
                 if value is not None:
@@ -64,6 +65,7 @@ def model_to_dict(instance, fields=None, exclude=None):
     """
     # avoid a circular import
     from django.db.models.fields.related import ManyToManyField
+
     opts = instance._meta
     data = {}
     for f in opts.concrete_fields + opts.many_to_many:
@@ -282,5 +284,17 @@ class SmartModel(ModelDiffMixin, AuditModel):
     class Meta:
         abstract = True
 
-opt_key = '_smart_meta'
-setattr(SmartModel, opt_key, OptionsLazy(opt_key, Options))
+
+class SmartOptions(Options):
+
+    meta_class_name = 'SmartMeta'
+    meta_name = '_smart_meta'
+    model_class = SmartModel
+    attributes = {
+        'is_cleaned_pre_save': True,
+        'is_cleaned_post_save': False,
+        'is_cleaned_pre_delete': False,
+        'is_cleaned_post_delete': False,
+        'is_save_atomic': False,
+        'is_delete_atomic': False,
+    }
