@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from collections import OrderedDict
 
 
@@ -28,13 +30,21 @@ class Enum(AbstractEnum):
 class NumEnum(AbstractEnum):
 
     def __init__(self, *items):
-        self.container = dict()
+        self.container = OrderedDict()
         super(NumEnum, self).__init__()
-        i = 1
-        for arg in items:
-            if arg is not None:
-                self.container[arg] = i
-            i += 1
+        i = 0
+        for item in items:
+            if len(item) == 2:
+                key, i = item
+                if not isinstance(i, int):
+                    raise ValueError('Last value of item must by integer')
+            else:
+                key = item
+                i += 1
+
+            if i in self.container.values():
+                raise ValueError('Index %s already exists, please renumber choices')
+            self.container[key] = i
 
     def _get_attr_val(self, name):
         return self.container[name]
@@ -95,9 +105,15 @@ class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
             else:
                 raise ValueError('Wrong input data format')
 
-            if i in (j for j, _ in self.container.values()):
+            if i in {j for j, _ in self.container.values()}:
                 raise ValueError('Index %s already exists, please renumber choices')
             self.container[key] = (i, val)
+
+    def get_name(self, i):
+        for key, (number, _) in self.container.items():
+            if number == i:
+                return key
+        return None
 
     def _get_attr_val(self, name):
         return self.container[name][0]

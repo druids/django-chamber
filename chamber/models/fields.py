@@ -6,7 +6,7 @@ from django.db.models.fields import DecimalField as OriginDecimalField
 from django.db.models import FileField as OriginFileField
 from django.forms import forms
 from django.template.defaultfilters import filesizeformat
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text
 from django.db import models
 
@@ -23,7 +23,7 @@ class SouthMixin(object):
 
     def south_field_triple(self):
         from south.modelsinspector import introspector
-        cls_name = '%s.%s' % (self.__class__.__module__ , self.__class__.__name__)
+        cls_name = '%s.%s' % (self.__class__.__module__, self.__class__.__name__)
         args, kwargs = introspector(self)
         return (cls_name, args, kwargs)
 
@@ -67,11 +67,12 @@ class RestrictedFileFieldMixin(SouthMixin):
         data = super(RestrictedFileFieldMixin, self).clean(*args, **kwargs)
 
         if data.file.size > self.max_upload_size:
-            raise forms.ValidationError(_('Please keep filesize under %(max)s. Current filesize %(current)s') %
-                                        {
-                                         'max': filesizeformat(self.max_upload_size),
-                                         'current': filesizeformat(data.file.size)
-                                         })
+            raise forms.ValidationError(
+                ugettext('Please keep filesize under %(max)s. Current filesize %(current)s') % {
+                    'max': filesizeformat(self.max_upload_size),
+                    'current': filesizeformat(data.file.size)
+                }
+            )
         return data
 
     def get_filename(self, filename):
@@ -97,13 +98,8 @@ class CharNullField(SouthMixin, models.CharField):
     def to_python(self, value):
         if isinstance(value, models.CharField):
             return value
-        if value == None:
-            return ""
         else:
-            return value
+            return '' if value is None else value
 
     def get_prep_value(self, value):
-        if value == "":
-            return None
-        else:
-            return value
+        return None if value == '' else value

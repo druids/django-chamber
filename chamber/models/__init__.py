@@ -2,13 +2,60 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ValidationError
 from django.db.models import CharField
-from django.db.models import AutoField
-from django.db import models
+from django.db import models, transaction
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text
 
 from chamber.exceptions import PersistenceException
+
+
+class OptionsLazy(object):
+
+    def __init__(self, name, klass):
+        self.name = name
+        self.klass = klass
+
+    def __get__(self, instance=None, owner=None):
+        option = self.klass(owner)
+        setattr(owner, self.name, option)
+        return option
+
+
+class Options(object):
+
+    meta_name = 'SmartMeta'
+
+    def __init__(self, model):
+        self.model = model
+
+        self.is_cleaned_pre_save = True
+        self.is_cleaned_post_save = False
+
+        self.is_cleaned_pre_delete = False
+        self.is_cleaned_post_delete = False
+
+        self.is_save_atomic = False
+        self.is_delete_atomic = False
+
+        if hasattr(model, 'SmartMeta'):
+            self.is_cleaned_pre_save = self._getattr('is_cleaned_pre_save', self.is_cleaned_pre_save)
+            self.is_cleaned_post_save = self._getattr('is_cleaned_post_save', self.is_cleaned_post_save)
+
+            self.is_cleaned_pre_delete = self._getattr('is_cleaned_pre_delete', self.is_cleaned_pre_delete)
+            self.is_cleaned_post_delete = self._getattr('is_cleaned_post_delete', self.is_cleaned_post_delete)
+            self.is_save_atomic = self._getattr('is_save_atomic', self.is_save_atomic)
+            self.is_delete_atomic = self._getattr('is_delete_atomic', self.is_delete_atomic)
+
+    def _getattr(self, name, default_value):
+        meta_models = [b for b in self.model.__mro__ if issubclass(b, models.Model)]
+        for model in meta_models:
+            meta = getattr(model, self.meta_name, None)
+            if meta:
+                value = getattr(meta, name, None)
+                if value is not None:
+                    return value
+        return default_value
 
 
 def model_to_dict(instance, fields=None, exclude=None):
@@ -20,7 +67,7 @@ def model_to_dict(instance, fields=None, exclude=None):
     opts = instance._meta
     data = {}
     for f in opts.concrete_fields + opts.many_to_many:
-        if fields and not f.name in fields:
+        if fields and f.name not in fields:
             continue
         if exclude and f.name in exclude:
             continue
@@ -65,7 +112,7 @@ class ModelDiffMixin(object):
 
     @property
     def changed_fields(self):
-        return self.diff.keys()
+        return set(self.diff.keys())
 
     def get_field_diff(self, field_name):
         """
@@ -104,17 +151,17 @@ class Comparator(object):
         raise NotImplementedError
 
 
-class AuditMixin(models.Model):
-    created_at = models.DateTimeField(verbose_name=_('created at'), null=False, blank=False, auto_now_add=True)
-    changed_at = models.DateTimeField(verbose_name=_('changed at'), null=False, blank=False, auto_now=True)
+class AuditModel(models.Model):
+    created_at = models.DateTimeField(verbose_name=_('created at'), null=False, blank=False, auto_now_add=True,
+                                      db_index=True)
+    changed_at = models.DateTimeField(verbose_name=_('changed at'), null=False, blank=False, auto_now=True,
+                                      db_index=True)
 
     class Meta:
         abstract = True
 
 
-class SmartModel(ModelDiffMixin, ComparableModelMixin):
-    created_at = models.DateTimeField(verbose_name=_('created at'), null=False, blank=False, auto_now_add=True)
-    changed_at = models.DateTimeField(verbose_name=_('changed at'), null=False, blank=False, auto_now=True)
+class SmartModel(ModelDiffMixin, AuditModel):
 
     def full_clean(self, *args, **kwargs):
         errors = {}
@@ -129,12 +176,25 @@ class SmartModel(ModelDiffMixin, ComparableModelMixin):
             raise ValidationError(errors)
         super(SmartModel, self).full_clean(*args, **kwargs)
 
-    def pre_save(self, change, *args, **kwargs):
-        pass
+    def _clean_save(self):
+        self._persistence_clean()
 
-    def save(self, *args, **kwargs):
-        change = bool(self.pk)
-        self.pre_save(change, *args, **kwargs)
+    def _clean_delete(self):
+        self._persistence_clean()
+
+    def _clean_pre_save(self):
+        self._clean_save()
+
+    def _clean_pre_delete(self):
+        self._clean_delete()
+
+    def _clean_post_save(self):
+        self._clean_save()
+
+    def _clean_post_delete(self):
+        self._clean_delete()
+
+    def _persistence_clean(self):
         try:
             self.full_clean()
         except ValidationError as er:
@@ -143,11 +203,84 @@ class SmartModel(ModelDiffMixin, ComparableModelMixin):
                     ('%s: %s' % (key, ', '.join(map(force_text, val))) for key, val in er.message_dict.items())))
             else:
                 raise PersistenceException(', '.join(map(force_text, er.messages)))
-        super(SmartModel, self).save(*args, **kwargs)
-        self.post_save(change, *args, **kwargs)
 
-    def post_save(self, change, *args, **kwargs):
+    def _get_save_extra_kwargs(self):
+        return {}
+
+    def _pre_save(self, *args, **kwargs):
         pass
+
+    def _save(self, is_cleaned_pre_save=None, is_cleaned_post_save=None, force_insert=False, force_update=False, using=None,
+              update_fields=None, *args, **kwargs):
+        is_cleaned_pre_save = (
+            self._smart_meta.is_cleaned_pre_save if is_cleaned_pre_save is None else is_cleaned_pre_save
+        )
+        is_cleaned_post_save = (
+            self._smart_meta.is_cleaned_post_save if is_cleaned_post_save is None else is_cleaned_post_save
+        )
+
+        change = bool(self.pk)
+        changed_fields = set(self.changed_fields)
+        kwargs.update(self._get_save_extra_kwargs())
+
+        self._pre_save(change, changed_fields, *args, **kwargs)
+
+        if is_cleaned_pre_save:
+            self._clean_pre_save()
+
+        super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
+                                     update_fields=update_fields)
+
+        self._post_save(change, changed_fields, *args, **kwargs)
+
+        if is_cleaned_post_save:
+            self._clean_post_save()
+
+    def _post_save(self, *args, **kwargs):
+        pass
+
+    def save(self, *args, **kwargs):
+        if self._smart_meta.is_save_atomic:
+            with transaction.atomic():
+                self._save(*args, **kwargs)
+        else:
+            self._save(*args, **kwargs)
+
+    def _pre_delete(self, *args, **kwargs):
+        pass
+
+    def _delete(self, is_cleaned_pre_delete=None, is_cleaned_post_delete=None, *args, **kwargs):
+        is_cleaned_pre_delete = (
+            self._smart_meta.is_cleaned_pre_delete if is_cleaned_pre_delete is None else is_cleaned_pre_delete
+        )
+        is_cleaned_post_delete = (
+            self._smart_meta.is_cleaned_post_delete if is_cleaned_post_delete is None else is_cleaned_post_delete
+        )
+
+        self._pre_delete(*args, **kwargs)
+
+        if is_cleaned_pre_delete:
+            self._clean_pre_delete()
+
+        super(SmartModel, self).delete(*args, **kwargs)
+
+        self._post_delete(*args, **kwargs)
+
+        if is_cleaned_post_delete:
+            self._clean_post_delete()
+
+    def _post_delete(self, *args, **kwargs):
+        pass
+
+    def delete(self, *args, **kwargs):
+        if self._smart_meta.is_delete_atomic:
+            with transaction.atomic():
+                self._delete(*args, **kwargs)
+        else:
+            self._delete(*args, **kwargs)
 
     class Meta:
         abstract = True
+
+opt_key = '_smart_meta'
+setattr(SmartModel, opt_key, OptionsLazy(opt_key, Options))
