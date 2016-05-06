@@ -69,10 +69,10 @@ class MultidomainsTestCase(TestCase):
                      'https://localhost/current_time_frontend/')
 
         assert_equal(reverse('current-datetime', site_id=settings.BACKEND_SITE_ID, add_domain=True,
-                             urlconf='frontend_urls'),
+                             urlconf='dj.frontend_urls'),
                      'http://localhost:8000/current_time_frontend/')
         assert_equal(reverse('current-datetime', site_id=settings.FRONTEND_SITE_ID, add_domain=True,
-                             urlconf='backend_urls'),
+                             urlconf='dj.backend_urls'),
                      'https://localhost/current_time_backend/')
 
         assert_equal(reverse('current-datetime', qs_kwargs={'a': 1}), '/current_time_backend/?a=1')
