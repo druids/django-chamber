@@ -82,7 +82,7 @@ class ChoicesEnum(AbstractChoicesEnum, AbstractEnum):
             self.container[key] = val
 
     def _get_choices(self):
-        return self.container.items()
+        return list(self.container.items())
 
     def _get_labels_dict(self):
         return self.container
@@ -119,4 +119,4 @@ class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
         return self.container[name][0]
 
     def _get_choices(self):
-        return self.container.values()
+        return list(self.container.values())

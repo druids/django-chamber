@@ -8,7 +8,7 @@ from django.template.defaultfilters import stringfilter
 
 
 def remove_accent(string_with_diacritics):
-    return unicodedata.normalize('NFKD', string_with_diacritics).encode('ASCII', 'ignore')
+    return unicodedata.normalize('NFKD', string_with_diacritics).encode('ASCII', 'ignore').decode('ASCII')
 
 
 def get_class_method(cls_or_inst, method_name):
