@@ -15,5 +15,5 @@ def reverse(viewname, site_id=None, add_domain=False, urlconf=None, args=None, k
                else urlconf)
     site_id = settings.SITE_ID if site_id is None else site_id
     domain = get_domain(site_id).url if add_domain else ''
-    qs = '?%s' % urlencode(qs_kwargs) if qs_kwargs else ''
+    qs = '?{}'.format(urlencode(qs_kwargs)) if qs_kwargs else ''
     return ''.join((domain, urlresolvers.reverse(viewname, urlconf, args, kwargs, current_app), qs))

@@ -22,9 +22,9 @@ class Domain(object):
 
     @property
     def url(self):
-        return ('%s://%s' % (self.protocol, self.hostname)
+        return ('{}://{}'.format(self.protocol, self.hostname)
                 if (self.protocol == 'http' and self.port == 80) or (self.protocol == 'https' and self.port == 443)
-                else '%s://%s:%s' % (self.protocol, self.hostname, self.port))
+                else '{}://{}:{}'.format(self.protocol, self.hostname, self.port))
 
     @property
     def user_class(self):
