@@ -12,9 +12,7 @@ class OptionsLazy(object):
         self.klass = klass
 
     def __get__(self, instance=None, owner=None):
-        option = self.klass(owner)
-        setattr(owner, self.name, option)
-        return option
+        return self.klass(owner)
 
 
 class OptionsBase(type):

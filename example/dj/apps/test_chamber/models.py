@@ -2,9 +2,8 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
-from django.core.exceptions import ValidationError
 
-from chamber.models import ModelDiffMixin, SmartModel, ComparableModelMixin
+from chamber.models import SmartModel, ComparableModelMixin
 
 
 class ShortcutsModel(models.Model):
@@ -13,7 +12,7 @@ class ShortcutsModel(models.Model):
     number = models.IntegerField()
 
 
-class DiffModel(ModelDiffMixin, models.Model):
+class DiffModel(SmartModel):
     name = models.CharField(max_length=100)
     datetime = models.DateTimeField()
     number = models.IntegerField()

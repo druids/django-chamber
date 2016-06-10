@@ -2,17 +2,15 @@ from __future__ import unicode_literals
 
 from datetime import timedelta
 
-from django.test import TestCase
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
+from django.test import TransactionTestCase
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
-from germanium.tools import assert_equal, assert_raises, assert_true, assert_false
+from germanium.tools import assert_equal, assert_raises, assert_true, assert_false, assert_raises
 
 from test_chamber.models import DiffModel, ComparableModel, TestSmartModel
 
-from chamber.models import Comparator
+from chamber.models import Comparator, ChangedFields
 from chamber.exceptions import PersistenceException
 
 
@@ -56,15 +54,38 @@ class TestPostProxySmartModel(TestSmartModel):
         proxy = True
 
 
-class ModelsTestCase(TestCase):
+class ModelsTestCase(TransactionTestCase):
+
+    def test_smart_model_changed_fields(self):
+        obj = TestProxySmartModel.objects.create(name='a')
+        changed_fields = ChangedFields(obj)
+        assert_equal(len(changed_fields), 0)
+        obj.name = 'b'
+        assert_equal(len(changed_fields), 1)
+        assert_equal(changed_fields['name'].initial, 'a')
+        assert_equal(changed_fields['name'].current, 'b')
+        obj.save()
+
+        # Initial values is not changed
+        assert_equal(len(changed_fields), 2)
+        assert_equal(set(changed_fields.keys()), {'name', 'changed_at'})
+        assert_equal(changed_fields['name'].initial, 'a')
+        assert_equal(changed_fields['name'].current, 'b')
+
+        assert_true(changed_fields.has_any_key('name', 'crated_at'))
+        assert_false(changed_fields.has_any_key('invalid', 'crated_at'))
+
+        assert_raises(AttributeError, changed_fields.__delitem__, 'name')
+        assert_raises(AttributeError, changed_fields.clear)
+        assert_raises(AttributeError, changed_fields.pop, 'name')
 
     def test_model_diff(self):
         obj = DiffModel.objects.create(name='test', datetime=timezone.now(), number=2)
         assert_false(obj.has_changed)
         obj.name = 'test2'
         assert_true(obj.has_changed)
-        assert_equal(obj.changed_fields, {'name'})
-        assert_equal(obj.get_field_diff('name'), ('test', 'test2'))
+        assert_equal(set(obj.changed_fields.keys()), {'name'})
+        assert_equal((obj.changed_fields['name'].initial, obj.changed_fields['name'].current), ('test', 'test2'))
 
         obj.name = 'test'
         assert_false(obj.has_changed)
@@ -74,7 +95,7 @@ class ModelsTestCase(TestCase):
         obj.number = 3
         obj.datetime = obj.datetime + timedelta(days=2)
         assert_true(obj.has_changed)
-        assert_equal(obj.changed_fields, {'name', 'number', 'datetime'})
+        assert_equal(set(obj.changed_fields.keys()), {'name', 'number', 'datetime'})
 
         obj.save()
         assert_false(obj.has_changed)
@@ -105,6 +126,8 @@ class ModelsTestCase(TestCase):
         class PostSaveTestProxySmartModel(TestProxySmartModel):
             class Meta:
                 proxy = True
+                verbose_name = 'testmodel'
+                verbose_name_plural = 'testmodels'
 
             class SmartMeta:
                 is_cleaned_pre_save = False
@@ -125,6 +148,8 @@ class ModelsTestCase(TestCase):
         class AtomicPostSaveTestProxySmartModel(TestProxySmartModel):
             class Meta:
                 proxy = True
+                verbose_name = 'testmodel'
+                verbose_name_plural = 'testmodels'
 
             class SmartMeta:
                 is_cleaned_pre_save = False
@@ -146,6 +171,8 @@ class ModelsTestCase(TestCase):
         class PreDeleteTestProxySmartModel(TestProxySmartModel):
             class Meta:
                 proxy = True
+                verbose_name = 'testmodel'
+                verbose_name_plural = 'testmodels'
 
             class SmartMeta:
                 is_cleaned_pre_save = False
@@ -165,6 +192,8 @@ class ModelsTestCase(TestCase):
         class PostDeleteTestProxySmartModel(TestProxySmartModel):
             class Meta:
                 proxy = True
+                verbose_name = 'testmodel'
+                verbose_name_plural = 'testmodels'
 
             class SmartMeta:
                 is_cleaned_pre_save = False
@@ -184,6 +213,8 @@ class ModelsTestCase(TestCase):
         class AtomicPostDeleteTestProxySmartModel(TestProxySmartModel):
             class Meta:
                 proxy = True
+                verbose_name = 'testmodel'
+                verbose_name_plural = 'testmodels'
 
             class SmartMeta:
                 is_cleaned_pre_save = False
