@@ -1,11 +1,11 @@
 from __future__ import unicode_literals
 
-import six
+import collections
+
+from six import python_2_unicode_compatible
 
 from django.core.exceptions import ValidationError
-from django.db.models import CharField
 from django.db import models, transaction
-from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text
 
@@ -41,52 +41,75 @@ def model_to_dict(instance, fields=None, exclude=None):
     return data
 
 
-class ModelDiffMixin(object):
-    """
-    A model mixin that tracks model fields' values and provide some useful api
-    to know what fields have been changed.
-    """
+ValueChange = collections.namedtuple('ValueChange', ('initial', 'current'))
 
-    def __init__(self, *args, **kwargs):
-        super(ModelDiffMixin, self).__init__(*args, **kwargs)
-        self.__initial = self._dict
 
-    @property
-    def initial_values(self):
-        return self.__initial
+@python_2_unicode_compatible
+class ChangedFields(object):
+
+    def __init__(self, instance):
+        self.instance = instance
+        self.initial_values = self.get_instance_dict(instance)
+
+    def get_instance_dict(self, instance):
+        return model_to_dict(instance, fields=(field.name for field in instance._meta.fields))
 
     @property
     def diff(self):
-        d1 = self.__initial
-        d2 = self._dict
-        diffs = [(k, (v, d2[k])) for k, v in d1.items() if v != d2[k]]
-        return dict(diffs)
+        d1 = self.initial_values
+        d2 = self.get_instance_dict(self.instance)
+        return {k : ValueChange(v, d2[k]) for k, v in d1.items() if v != d2[k]}
 
-    @property
-    def has_changed(self):
-        return bool(self.diff)
+    def __setitem__(self, key, item):
+        raise AttributeError('Object is readonly')
 
-    @property
-    def changed_fields(self):
-        return set(self.diff.keys())
+    def __getitem__(self, key):
+        return self.diff[key]
 
-    def get_field_diff(self, field_name):
-        """
-        Returns a diff for field if it's changed and None otherwise.
-        """
-        return self.diff.get(field_name, None)
+    def __repr__(self):
+        return repr(self.diff)
 
-    def save(self, *args, **kwargs):
-        """
-        Saves model and set initial state.
-        """
-        super(ModelDiffMixin, self).save(*args, **kwargs)
-        self.__initial = self._dict
+    def __len__(self):
+        return len(self.diff)
 
-    @property
-    def _dict(self):
-        return model_to_dict(self, fields=[field.name for field in
-                             self._meta.fields])
+    def __delitem__(self, key):
+        raise AttributeError('Object is readonly')
+
+    def clear(self):
+        raise AttributeError('Object is readonly')
+
+    def has_key(self, k):
+        return self.diff.has_key(k)
+
+    def has_any_key(self, *keys):
+        return bool(set(self.keys()) & set(keys))
+
+    def update(self, *args, **kwargs):
+        raise AttributeError('Object is readonly')
+
+    def keys(self):
+        return self.diff.keys()
+
+    def values(self):
+        return self.diff.values()
+
+    def items(self):
+        return self.diff.items()
+
+    def pop(self, *args, **kwargs):
+        raise AttributeError('Object is readonly')
+
+    def __cmp__(self, dict):
+        return cmp(self.diff, dict)
+
+    def __contains__(self, item):
+        return item in self.diff
+
+    def __iter__(self):
+        return iter(self.diff)
+
+    def __str__(self):
+        return repr(self.diff)
 
 
 class ComparableModelMixin(object):
@@ -117,7 +140,19 @@ class AuditModel(models.Model):
         abstract = True
 
 
-class SmartModel(ModelDiffMixin, AuditModel):
+class SmartModel(AuditModel):
+
+    def __init__(self, *args, **kwargs):
+        super(SmartModel, self).__init__(*args, **kwargs)
+        self.changed_fields = ChangedFields(self)
+
+    @property
+    def has_changed(self):
+        return bool(self.changed_fields)
+
+    @property
+    def initial_values(self):
+        return self.changed_fields.initial_values
 
     def full_clean(self, *args, **kwargs):
         errors = {}
@@ -176,10 +211,9 @@ class SmartModel(ModelDiffMixin, AuditModel):
         )
 
         change = bool(self.pk)
-        changed_fields = set(self.changed_fields)
         kwargs.update(self._get_save_extra_kwargs())
 
-        self._pre_save(change, changed_fields, *args, **kwargs)
+        self._pre_save(change, self.changed_fields, *args, **kwargs)
 
         if is_cleaned_pre_save:
             self._clean_pre_save()
@@ -187,7 +221,7 @@ class SmartModel(ModelDiffMixin, AuditModel):
         super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                      update_fields=update_fields)
 
-        self._post_save(change, changed_fields, *args, **kwargs)
+        self._post_save(change, self.changed_fields, *args, **kwargs)
 
         if is_cleaned_post_save:
             self._clean_post_save()
@@ -201,6 +235,7 @@ class SmartModel(ModelDiffMixin, AuditModel):
                 self._save(*args, **kwargs)
         else:
             self._save(*args, **kwargs)
+        self.changed_fields = ChangedFields(self)
 
     def _pre_delete(self, *args, **kwargs):
         pass
