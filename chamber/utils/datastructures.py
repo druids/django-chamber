@@ -20,11 +20,14 @@ class AbstractEnum(object):
 class Enum(AbstractEnum):
 
     def __init__(self, *items):
-        self.container = set(items)
+        self.container = OrderedDict(((item, item) for item in items))
         super(Enum, self).__init__()
 
+    def _get_attr_val(self, name):
+        return self.container[name]
+
     def __iter__(self):
-        return self.container.__iter__()
+        return self.container.values().__iter__()
 
 
 class NumEnum(AbstractEnum):
