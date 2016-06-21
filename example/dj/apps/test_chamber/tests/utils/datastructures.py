@@ -1,14 +1,10 @@
 from __future__ import unicode_literals
 
 from django.test import TestCase
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 
 from germanium.tools import assert_equal, assert_raises
 
-from chamber.utils.datastructures import Enum, NumEnum, ChoicesEnum, ChoicesNumEnum
-
-from test_chamber.models import BackendUser, FrontendUser
+from chamber.utils.datastructures import Enum, NumEnum, ChoicesEnum, ChoicesNumEnum, OrderedSet
 
 
 class DatastructuresTestCase(TestCase):
@@ -114,3 +110,22 @@ class DatastructuresTestCase(TestCase):
             ChoicesNumEnum(
                 ('A', 'a', 'e'), ('B', 'b', 2)
             )
+
+    def test_ordered_set_keep_order(self):
+        ordered_set = OrderedSet(4, 5, 3)
+        assert_equal(ordered_set, [4, 5, 3])
+        ordered_set.add(8)
+        assert_equal(ordered_set, [4, 5, 3, 8])
+        assert_equal(ordered_set.pop(), 8)
+        assert_equal(ordered_set.pop(False), 4)
+        assert_equal(ordered_set, [5, 3])
+        ordered_set |= OrderedSet(9, 10)
+        assert_equal(ordered_set, [5, 3, 9, 10])
+        assert_equal(ordered_set, {5, 3, 9, 10})
+        ordered_set |= OrderedSet(5, 9)
+        assert_equal(ordered_set, {5, 3, 9, 10})
+        ordered_set.discard(9)
+        assert_equal(ordered_set, {5, 3, 10})
+        ordered_set.add(5)
+        ordered_set.add(9)
+        assert_equal(ordered_set, {5, 3, 10, 9})
