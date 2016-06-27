@@ -154,18 +154,18 @@ class SmartModel(AuditModel):
     def initial_values(self):
         return self.changed_fields.initial_values
 
-    def full_clean(self, *args, **kwargs):
+    def full_clean(self, exclude=None, *args, **kwargs):
         errors = {}
         for field in self._meta.fields:
-            if hasattr(self, 'clean_%s' % field.name):
+            if (not exclude or field.name not in exclude) and hasattr(self, 'clean_{}'.format(field.name)):
                 try:
-                    getattr(self, 'clean_%s' % field.name)()
+                    getattr(self, 'clean_{}'.format(field.name))()
                 except ValidationError as er:
                     errors[field.name] = er.messages
 
         if errors:
             raise ValidationError(errors)
-        super(SmartModel, self).full_clean(*args, **kwargs)
+        super(SmartModel, self).full_clean(exclude=exclude, *args, **kwargs)
 
     def _clean_save(self):
         self._persistence_clean()

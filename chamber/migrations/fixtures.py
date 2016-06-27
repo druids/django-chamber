@@ -28,8 +28,10 @@ class MigrationLoadFixture(object):
             except (LookupError, TypeError):
                 raise base.DeserializationError("Invalid model identifier: '%s'" % model_identifier)
 
+        get_model_tmp = python._get_model
         python._get_model = _get_model
         file = os.path.join(self.fixture_dir, self.fixture_filename)
         if not os.path.isfile(file):
             raise IOError('File "%s" does not exists' % file)
         call_command('loaddata', file, stdout=cStringIO())
+        python._get_model = get_model_tmp
