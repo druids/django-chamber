@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from collections import OrderedDict
+from collections import OrderedDict, MutableSet
 
 
 class AbstractEnum(object):
@@ -20,11 +20,14 @@ class AbstractEnum(object):
 class Enum(AbstractEnum):
 
     def __init__(self, *items):
-        self.container = set(items)
+        self.container = OrderedDict(((item, item) for item in items))
         super(Enum, self).__init__()
 
+    def _get_attr_val(self, name):
+        return self.container[name]
+
     def __iter__(self):
-        return self.container.__iter__()
+        return self.container.values().__iter__()
 
 
 class NumEnum(AbstractEnum):
@@ -120,3 +123,71 @@ class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
 
     def _get_choices(self):
         return list(self.container.values())
+
+
+class OrderedSet(MutableSet):
+
+    def __init__(self, *iterable):
+        self.end = end = []
+        end += [None, end, end]         # sentinel node for doubly linked list
+        self.map = {}                   # key --> [key, prev, next]
+        if iterable is not None:
+            self |= iterable
+
+    def __len__(self):
+        return len(self.map)
+
+    def __contains__(self, key):
+        return key in self.map
+
+    def add(self, key):
+        if key not in self.map:
+            end = self.end
+            curr = end[1]
+            curr[2] = end[1] = self.map[key] = [key, curr, end]
+
+    def discard(self, key):
+        if key in self.map:
+            key, prev, next = self.map.pop(key)
+            prev[2] = next
+            next[1] = prev
+
+    def __iter__(self):
+        end = self.end
+        curr = end[2]
+        while curr is not end:
+            yield curr[0]
+            curr = curr[2]
+
+    def __reversed__(self):
+        end = self.end
+        curr = end[1]
+        while curr is not end:
+            yield curr[0]
+            curr = curr[1]
+
+    def pop(self, last=True):
+        if not self:
+            raise KeyError('set is empty')
+        key = self.end[1][0] if last else self.end[2][0]
+        self.discard(key)
+        return key
+
+    def __repr__(self):
+        if not self:
+            return '{}()'.format(self.__class__.__name__,)
+        else:
+            return '{}({})'.format(self.__class__.__name__, list(self))
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedSet):
+            return len(self) == len(other) and list(self) == list(other)
+        return set(self) == set(other)
+
+
+class AttrString(str):
+
+    def __new__(cls, value, **kwargs):
+        obj = str.__new__(cls, value)
+        [setattr(obj, k, v) for k, v in kwargs.items()]
+        return obj

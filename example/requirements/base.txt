@@ -1,5 +1,5 @@
 Django==1.8
 diff-match-patch==20110725.1
-https://github.com/LukasRychtecky/germanium/tarball/1.0.8#egg=germanium-1.0.8
+https://github.com/LukasRychtecky/germanium/tarball/1.0.12#egg=germanium-1.0.12
 six==1.10.0
 coverage==4.0.2
