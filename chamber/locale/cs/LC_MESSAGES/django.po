@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-07-28 20:11+0200\n"
+"POT-Creation-Date: 2016-07-28 21:15+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -26,7 +26,8 @@ msgstr "vytvořeno"
 msgid "changed at"
 msgstr "upraveno"
 
-#: models/fields.py:71
-#, python-format
-msgid "Please keep filesize under %(max)s. Current filesize %(current)s"
-msgstr "Maximální udržujte velikost souboru pod %(max)s. Současná velikost souboru je %(current)s"
+#: models/fields.py:63
+#, python-brace-format
+msgid "Please keep filesize under {max}. Current filesize {current}"
+msgstr ""
+"Udržujte velikost souboru pod {max}. Současná velikost souboru je {current}"

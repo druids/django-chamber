@@ -52,6 +52,23 @@ class DecimalField(SouthMixin, OriginDecimalField):
         return super(DecimalField, self).formfield(**defaults)
 
 
+class RestrictedFileValidator(object):
+
+    def __init__(self, max_upload_size):
+        self.max_upload_size = max_upload_size
+
+    def __call__(self, data):
+        if data.size > self.max_upload_size:
+            raise forms.ValidationError(
+                ugettext('Please keep filesize under {max}. Current filesize {current}').format(
+                    max=filesizeformat(self.max_upload_size),
+                    current=filesizeformat(data.size)
+                )
+            )
+        else:
+            return data
+
+
 class RestrictedFileFieldMixin(SouthMixin):
     """
     Same as FileField, but you can specify:
@@ -59,21 +76,10 @@ class RestrictedFileFieldMixin(SouthMixin):
         * max_upload_size - a number indicating the maximum file size allowed for upload in MB.
     """
     def __init__(self, *args, **kwargs):
-        self.max_upload_size = kwargs.pop("max_upload_size", config.MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
+        max_upload_size = kwargs.pop('max_upload_size', config.MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
 
         super(RestrictedFileFieldMixin, self).__init__(*args, **kwargs)
-
-    def clean(self, *args, **kwargs):
-        data = super(RestrictedFileFieldMixin, self).clean(*args, **kwargs)
-
-        if data.file.size > self.max_upload_size:
-            raise forms.ValidationError(
-                ugettext('Please keep filesize under %(max)s. Current filesize %(current)s') % {
-                    'max': filesizeformat(self.max_upload_size),
-                    'current': filesizeformat(data.file.size)
-                }
-            )
-        return data
+        self.validators.append(RestrictedFileValidator(max_upload_size))
 
     def get_filename(self, filename):
         """
