@@ -19,6 +19,9 @@ CACHE/
 #############
 .project
 .pydevproject
+.settings
+*.swp
+.idea
 
 # Logs and databases #
 ######################
