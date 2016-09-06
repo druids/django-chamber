@@ -99,7 +99,6 @@ class ImageField(RestrictedFileFieldMixin, OriginImageField):
 
 class CharNullField(SouthMixin, models.CharField):
     description = "CharField that stores NULL but returns ''"
-    __metaclass__ = models.SubfieldBase
 
     def to_python(self, value):
         if isinstance(value, models.CharField):
