@@ -215,8 +215,8 @@ class SmartModel(AuditModel):
     def _pre_save(self, *args, **kwargs):
         pass
 
-    def _save(self, is_cleaned_pre_save=None, is_cleaned_post_save=None, force_insert=False, force_update=False, using=None,
-              update_fields=None, *args, **kwargs):
+    def _save(self, is_cleaned_pre_save=None, is_cleaned_post_save=None, force_insert=False, force_update=False,
+              using=None, update_fields=None, *args, **kwargs):
         is_cleaned_pre_save = (
             self._smart_meta.is_cleaned_pre_save if is_cleaned_pre_save is None else is_cleaned_pre_save
         )
@@ -234,7 +234,6 @@ class SmartModel(AuditModel):
 
         super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                      update_fields=update_fields)
-
         self._post_save(change, self.changed_fields, *args, **kwargs)
 
         if is_cleaned_post_save:
