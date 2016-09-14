@@ -140,11 +140,25 @@ class AuditModel(models.Model):
         abstract = True
 
 
+class Signal(object):
+
+    def __init__(self, obj):
+        self.connected_functions = []
+        self.obj = obj
+
+    def connect(self, fun):
+        self.connected_functions.append(fun)
+
+    def send(self):
+        [fun(self.obj) for fun in self.connected_functions]
+
+
 class SmartModel(AuditModel):
 
     def __init__(self, *args, **kwargs):
         super(SmartModel, self).__init__(*args, **kwargs)
         self.changed_fields = ChangedFields(self)
+        self.post_save = Signal(self)
 
     @property
     def has_changed(self):
@@ -225,6 +239,7 @@ class SmartModel(AuditModel):
 
         if is_cleaned_post_save:
             self._clean_post_save()
+        self.post_save.send()
 
     def _post_save(self, *args, **kwargs):
         pass
