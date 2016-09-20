@@ -1,29 +1,30 @@
 from __future__ import unicode_literals
 
 from django.utils.functional import SimpleLazyObject
-from django.contrib.auth.models import AnonymousUser
 
-from is_core.auth_token.utils import get_user as origin_get_user, dont_enforce_csrf_checks
-from is_core.auth_token.middleware import TokenAuthenticationMiddlewares, get_token
+from is_core.auth_token.middleware import TokenAuthenticationMiddlewares, get_user
+from is_core.auth_token import utils
+from is_core.auth_token.utils import dont_enforce_csrf_checks
+from is_core.auth_token.models import Token
+from is_core.utils import header_name_to_django
+from is_core import config as is_core_config
 
 from chamber.shortcuts import get_object_or_none
+from chamber import config
 
-from chamber.multidomains.domain import get_current_domain
 
+def get_token(request):
+    """
+    Returns the token model instance associated with the given request token key.
+    If no user is retrieved AnonymousToken is returned.
+    """
+    if not request.META.get(header_name_to_django(is_core_config.IS_CORE_AUTH_HEADER_NAME)) and config.CHAMBER_MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME:
+        ovetaker_auth_token = request.COOKIES.get(config.CHAMBER_MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME)
+        token = get_object_or_none(Token, key=ovetaker_auth_token, is_active=True)
+        if utils.get_user_from_token(token).is_authenticated():
+            return token
 
-def get_user(request):
-    if not hasattr(request, '_cached_user'):
-        user = origin_get_user(request)
-        if user.is_authenticated():
-            child_user = get_object_or_none(
-                get_current_domain().user_class, pk=user.pk
-            )
-            if child_user is not None:
-                user = child_user
-            else:
-                user = AnonymousUser()
-        request._cached_user = user
-    return request._cached_user
+    return utils.get_token(request)
 
 
 class MultiDomainsTokenAuthenticationMiddleware(TokenAuthenticationMiddlewares):
@@ -31,6 +32,6 @@ class MultiDomainsTokenAuthenticationMiddleware(TokenAuthenticationMiddlewares):
         """
         Lazy set user and token
         """
-        request.token = SimpleLazyObject(lambda: get_token(request))
+        request.token = get_token(request)
         request.user = SimpleLazyObject(lambda: get_user(request))
         request._dont_enforce_csrf_checks = dont_enforce_csrf_checks(request)
