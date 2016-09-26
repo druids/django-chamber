@@ -2,15 +2,16 @@ from __future__ import unicode_literals
 
 from datetime import timedelta
 
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, TestCase
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 
-from germanium.tools import assert_equal, assert_raises, assert_true, assert_false, assert_raises
+from germanium.tools import assert_equal, assert_raises, assert_true, assert_false
 
-from test_chamber.models import DiffModel, ComparableModel, TestSmartModel
+from test_chamber.models import DiffModel, ComparableModel, TestSmartModel, CSVRecord
 
 from chamber.models import Comparator, ChangedFields
+from chamber.models.fields import generate_random_upload_path
 from chamber.exceptions import PersistenceException
 
 
@@ -263,3 +264,13 @@ class ModelsTestCase(TransactionTestCase):
         assert_equal(obj.name, 'test post save')
         obj.delete()
         assert_equal(obj.name, 'test post delete')
+
+
+class ModelFieldsTestCase(TestCase):
+
+    def test_random_file_path_should_be_generated_from_class_name(self):
+        instance = CSVRecord()
+        filename = 'filename.txt'
+        path = generate_random_upload_path(instance, filename)
+        assert_true(path.startswith('csvrecord/'))
+        assert_true(path.endswith('/{}'.format(filename)))

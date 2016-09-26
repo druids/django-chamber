@@ -85,7 +85,7 @@ class AbstractCSVImporter(object):
                 row_count=simple_count(self.get_filename(custom_csv_path=custom_csv_path), encoding=self.get_encoding())
             )
 
-    def import_rows(self, reader, row_count=None):
+    def import_rows(self, reader, row_count=0):
         raise NotImplementedError
 
     @property
@@ -129,12 +129,12 @@ class AbstractCSVImporter(object):
 class BulkCSVImporter(AbstractCSVImporter):
 
     delete_existing_objects = False  # Set to true if you want to delete all records in the model table
-    batch_size = 100000
+    batch_size = 10000
 
     def create_batch(self, chunk):
         return len(self.model_class.objects.bulk_create(chunk))
 
-    def import_rows(self, reader, row_count=None):
+    def import_rows(self, reader, row_count=0):
 
         if self.get_delete_existing_objects():
             self.model_class.objects.all().delete()
@@ -175,7 +175,7 @@ class CSVImporter(AbstractCSVImporter):
     query_fields = ()  # Fields used to get existing instances of the model in update_or_create, by default all fields
     update_fields = ()  # Fields that should be set by the update_or_create method
 
-    def import_rows(self, reader, row_count=None):
+    def import_rows(self, reader, row_count=0):
         created_flags = [self.row_to_model(row) for row in reader if any(row)]
         self.out_stream.write('Created {created} {model_name} and {updated} updated.'.format(
             created=sum(created_flags),
