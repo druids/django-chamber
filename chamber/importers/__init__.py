@@ -32,30 +32,6 @@ class DummyOutputStream(six.StringIO, object):
         super(DummyOutputStream, self).write(*args)
 
 
-class ProgressBarStream(object):
-    """
-    OutputStream wrapper to remove default linebreak at line endings.
-    """
-
-    def __init__(self, stream):
-        """
-        Wrap the given stream.
-        """
-        self.stream = stream
-
-    def write(self, *args, **kwargs):
-        """
-        Call the stream's write method without linebreaks at line endings.
-        """
-        return self.stream.write(ending="", *args, **kwargs)
-
-    def flush(self):
-        """
-        Call the stream's flush method without any extra arguments.
-        """
-        return self.stream.flush()
-
-
 class AbstractCSVImporter(object):
     """
     Abstract CSV importer provides an easy way to implement loading a CSV file into a Django model.
@@ -125,6 +101,12 @@ class AbstractCSVImporter(object):
                                                                     else None)
                 for k, v in zip_longest(self.get_fields(), row)}
 
+    def _pre_import_rows(self, row_count):
+        pass
+
+    def _post_import_rows(self, created_count, updated_count=0):
+        pass
+
 
 class BulkCSVImporter(AbstractCSVImporter):
 
@@ -135,6 +117,7 @@ class BulkCSVImporter(AbstractCSVImporter):
         return len(self.model_class.objects.bulk_create(chunk))
 
     def import_rows(self, reader, row_count=0):
+        self._pre_import_rows(row_count)
 
         if self.get_delete_existing_objects():
             self.model_class.objects.all().delete()
@@ -144,22 +127,17 @@ class BulkCSVImporter(AbstractCSVImporter):
 
         batch, created = [], 0
 
-        bar = pyprind.ProgBar(row_count, stream=ProgressBarStream(self.out_stream))
-
         for i, row in enumerate(reader):
             if i % self.get_batch_size() == 0 and i > 0:
-                bar.update(iterations=self.get_batch_size())
                 created += self.create_batch(batch)
+                self._post_batch_create(self.get_batch_size(), row_count)
                 del batch[:]
             if any(row):  # Skip blank lines
                 batch.append(self.model_class(**self.get_fields_dict(row)))
-        bar.update(iterations=len(batch))
         created += self.create_batch(batch)
+        self._post_batch_create(len(batch), row_count)
 
-        self.out_stream.write('Created {created} {model_name}.'.format(
-            created=created,
-            model_name=self.model_class._meta.verbose_name_plural
-        ))
+        self._post_import_rows(created)
 
         return created
 
@@ -169,6 +147,9 @@ class BulkCSVImporter(AbstractCSVImporter):
     def get_batch_size(self):
         return self.batch_size
 
+    def _post_batch_create(self, created_count, row_count):
+        pass
+
 
 class CSVImporter(AbstractCSVImporter):
 
@@ -176,12 +157,9 @@ class CSVImporter(AbstractCSVImporter):
     update_fields = ()  # Fields that should be set by the update_or_create method
 
     def import_rows(self, reader, row_count=0):
+        self._pre_import_rows(row_count)
         created_flags = [self.row_to_model(row) for row in reader if any(row)]
-        self.out_stream.write('Created {created} {model_name} and {updated} updated.'.format(
-            created=sum(created_flags),
-            model_name=self.model_class._meta.verbose_name_plural,
-            updated=len(created_flags) - sum(created_flags))
-        )
+        self._post_import_rows(sum(created_flags), len(created_flags) - sum(created_flags))
 
     def row_to_model(self, row):
         fields_dict = self.get_fields_dict(row)
