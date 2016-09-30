@@ -51,3 +51,42 @@ def filter_by_date(klass, **kwargs):
 
 def exclude_by_date(klass, **kwargs):
     return filter_or_exclude_by_date(True, klass, **kwargs)
+
+
+def change(obj, **changed_fields):
+    """
+    Changes a given `changed_fields` on object and returns changed object.
+    """
+    [setattr(obj, field_name, value) for field_name, value in changed_fields.items()]
+    return obj
+
+
+def change_and_save(obj, **changed_fields):
+    """
+    Changes a given `changed_fields` on object, saves it and returns changed object.
+    """
+    change(obj, **changed_fields)
+    obj.save()
+    return obj
+
+
+def bulk_change(iterable, **changed_fields):
+    """
+    Changes a given `changed_fields` on each object in a given `iterable`, returns the changed objects.
+    """
+    return [change(obj, **changed_fields) for obj in iterable]
+
+
+def bulk_change_and_save(iterable, **changed_fields):
+    """
+    Changes a given `changed_fields` on each object in a given `iterable`, saves objects
+    and returns the changed objects.
+    """
+    return [change_and_save(obj, **changed_fields) for obj in iterable]
+
+
+def bulk_save(iterable):
+    """
+    Saves a objects in a given `iterable`.
+    """
+    return [obj.save() for obj in iterable]

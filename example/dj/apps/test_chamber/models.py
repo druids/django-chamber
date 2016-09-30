@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
+from django.db import models
 
-from chamber.models import SmartModel, ComparableModelMixin
+from chamber.models import ComparableModelMixin, SmartModel
 
 
 class ShortcutsModel(models.Model):
@@ -32,3 +32,8 @@ class BackendUser(AbstractBaseUser):
 
 class FrontendUser(AbstractBaseUser):
     pass
+
+
+class CSVRecord(SmartModel):
+    name = models.CharField(max_length=100, null=True, blank=True)
+    number = models.IntegerField(null=True, blank=True)

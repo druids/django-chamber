@@ -1,22 +1,27 @@
 from __future__ import unicode_literals
 
-from django.core.validators import MinValueValidator
-from django.core.validators import MaxValueValidator
-from django.db.models.fields import DecimalField as OriginDecimalField
+import os
+from uuid import uuid4 as uuid
+
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
 from django.db.models import FileField as OriginFileField
+from django.db.models.fields import DecimalField as OriginDecimalField
 from django.forms import forms
 from django.template.defaultfilters import filesizeformat
-from django.utils.translation import ugettext_lazy as _, ugettext
 from django.utils.encoding import force_text
-from django.db import models
+from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext
+
+from chamber import config
+from chamber.forms.fields import DecimalField as DecimalFormField
+
 
 try:
     from sorl.thumbnail import ImageField as OriginImageField
 except ImportError:
     from django.db.models import ImageField as OriginImageField
 
-from chamber.forms.fields import DecimalField as DecimalFormField
-from chamber import config
 
 
 class SouthMixin(object):
@@ -108,3 +113,11 @@ class CharNullField(SouthMixin, models.CharField):
 
     def get_prep_value(self, value):
         return None if value == '' else value
+
+
+def generate_random_upload_path(instance, filename):
+    """
+    Pass this function to upload_to argument of FileField to store the file on an unguessable path.
+    The format of the path is class_name/hash/original_filename.
+    """
+    return os.path.join(instance.__class__.__name__.lower(), uuid().hex, filename)

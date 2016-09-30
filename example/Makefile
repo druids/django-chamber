@@ -91,4 +91,4 @@ update: clean cleanvirtualenv cleanjs bootstrap syncdb installjs initenv
 include build/Makefile.$(OS)
 
 linklibrary:
-	ln -sf $(LOCALPATH)/../chamber/ $(LOCALPATH)/var/ve/lib/python$(PYTHON_VERSION_MAJOR)/site-packages/;
+	ln -sf $$(pwd)/../chamber/ $$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())");

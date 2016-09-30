@@ -6,7 +6,7 @@ try:
     from chamber.multidomains.domain import Domain
 
 except ImportError:
-    from dj.common.libs.utils import FakeObject
+    from dj.libs.utils import FakeObject
 
     Domain = FakeObject
 
