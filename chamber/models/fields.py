@@ -81,7 +81,7 @@ class RestrictedFileFieldMixin(SouthMixin):
         * max_upload_size - a number indicating the maximum file size allowed for upload in MB.
     """
     def __init__(self, *args, **kwargs):
-        max_upload_size = kwargs.pop('max_upload_size', config.MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
+        max_upload_size = kwargs.pop('max_upload_size', config.CHAMBER_MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
 
         super(RestrictedFileFieldMixin, self).__init__(*args, **kwargs)
         self.validators.append(RestrictedFileValidator(max_upload_size))
