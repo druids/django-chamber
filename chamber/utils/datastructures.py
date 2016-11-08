@@ -81,14 +81,25 @@ class ChoicesEnum(AbstractChoicesEnum, AbstractEnum):
     def __init__(self, *items):
         self.container = OrderedDict()
         super(ChoicesEnum, self).__init__()
-        for key, val in items:
-            self.container[key] = val
+        for item in items:
+            if len(item) == 3:
+                key, label, val = item
+            elif len(item) == 2:
+                key, label = item
+                val = key
+            self.container[key] = (val, label)
+
+    def get_name(self, i):
+        for key, (val, _) in self.container.items():
+            if val == i:
+                return key
+        return None
+
+    def _get_attr_val(self, name):
+        return self.container[name][0]
 
     def _get_choices(self):
-        return list(self.container.items())
-
-    def _get_labels_dict(self):
-        return self.container
+        return list(self.container.values())
 
 
 class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
