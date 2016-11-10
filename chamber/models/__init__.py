@@ -12,6 +12,8 @@ from django.utils.encoding import force_text
 from chamber.exceptions import PersistenceException
 from chamber.patch import Options
 
+from .fields import *
+
 
 def model_to_dict(instance, fields=None, exclude=None):
     """
