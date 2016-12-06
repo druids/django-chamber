@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
-from collections import OrderedDict, MutableSet
+from collections import MutableSet, OrderedDict
+from itertools import chain
 
 
 class AbstractEnum(object):
@@ -134,6 +135,59 @@ class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
 
     def _get_choices(self):
         return list(self.container.values())
+
+
+class SubstatesChoicesNumEnum(ChoicesNumEnum):
+
+    def __init__(self, categories):
+        assert len(categories) > 0
+
+        self.categories = {}
+
+        super(SubstatesChoicesNumEnum, self).__init__(*(item for item in chain(*categories.values())))
+
+        self.categories = {
+            category: [getattr(self, item[0]) for item in subitems] for category, subitems in categories.items()
+        }
+
+    def get_allowed_states(self, category):
+        return self.categories.get(category, ())
+
+
+class SequenceChoicesEnumMixin(object):
+
+    def __init__(self, items, initial_states=None):
+        assert len(items) > 0
+
+        self.initial_states = initial_states
+
+        # The last value of every item are omitted and send to ChoicesEnum constructor
+        super(SequenceChoicesEnumMixin, self).__init__(*(item[:-1] for item in items if item[0] is not None))
+
+        self.first_choices = self._get_first_choices(items)
+
+        # The last value of every item is used for construction of graph that define allowed next states for every state
+        self.sequence_graph = {getattr(self, item[0]): item[-1] for item in items}
+
+    def _get_first_choices(self, items):
+        return tuple(getattr(self, key) for key in self.initial_states) if self.initial_states else self.all
+
+    def get_allowed_next_states(self, state, instance):
+        if not state:
+            return self.first_choices
+        else:
+            states_or_callable = self.sequence_graph.get(state)
+            states = (states_or_callable(instance) if hasattr(states_or_callable, '__call__')
+                      else list(states_or_callable))
+            return tuple(getattr(self, next_choice) for next_choice in states)
+
+
+class SequenceChoicesEnum(SequenceChoicesEnumMixin, ChoicesEnum):
+    pass
+
+
+class SequenceChoicesNumEnum(SequenceChoicesEnumMixin, ChoicesNumEnum):
+    pass
 
 
 class OrderedSet(MutableSet):
