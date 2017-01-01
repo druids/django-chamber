@@ -1,0 +1,43 @@
+# EditorConfig helps developers define and maintain consistent
+# coding styles between different editors and IDEs
+# editorconfig.org
+
+root = true
+
+
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+
+[*.py]
+indent_style = space
+indent_size = 4
+line_length=120
+known_third_party=factory,ipware,responses,requests,nose,south,coverage,six,suds,geopy,user_agents,celery,dateutil,jsonfield,easymode,PIL,pillow,mock,xlrd,attrdict,jinja2,phonenumber_field
+multi_line_output=0
+lines_after_imports=2
+known_django=django
+known_is_core=is_core
+known_chamber=chamber
+known_germanium=germanium
+known_mailer=mailer
+known_pyston=pyston
+known_reversion=reversion
+known_security=security
+known_sms_validator=sms_validator
+sections=FUTURE,STDLIB,THIRDPARTY,DJANGO,IS_CORE,CHAMBER,ATS_SMS_OPERATOR,GERMANIUM,MAILER,PYSTON,REVERSION,SECURITY,UTILS,FIRSTPARTY,LOCALFOLDER
+
+[*.html]
+indent_style = space
+indent_size = 4
+
+[*.json]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
