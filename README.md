@@ -211,6 +211,17 @@ Shortcut for [`chamber.shortcuts.filter_or_exclude_by_date`](#chambershortcutsfi
 Shortcut for [`chamber.shortcuts.filter_or_exclude_by_date`](#chambershortcutsfilter_or_exclude_by_date) with first parameter True.
 
 
+Development
+-----------
+
+For contribution go to `example` directory and call `make install` to install an example project.
+
+Testing
+-------
+
+To run tests go to `example` directory and call `make test`.
+
+
 ## License
 
 See LICENSE file.
