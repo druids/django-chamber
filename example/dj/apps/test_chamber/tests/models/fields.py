@@ -1,9 +1,8 @@
-from django.core.exceptions import ValidationError
 from django.test import TransactionTestCase
 
 from chamber.shortcuts import change_and_save
 from chamber.models.fields import generate_random_upload_path
-from germanium.tools import assert_equal, assert_raises, assert_true, assert_false, assert_is_none
+from germanium.tools import assert_equal, assert_raises, assert_true, assert_is_none
 
 from chamber.exceptions import PersistenceException
 
@@ -14,7 +13,7 @@ class ModelFieldsTestCase(TransactionTestCase):
 
     def setUp(self):
         self.inst = TestFieldsModel()
-        super(TransactionTestCase, self).setUp()
+        super(ModelFieldsTestCase, self).setUp()
 
     def test_random_file_path_should_be_generated_from_class_name(self):
         instance = CSVRecord()

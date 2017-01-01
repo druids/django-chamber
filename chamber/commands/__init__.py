@@ -52,7 +52,7 @@ class BulkImportCSVCommand(ImportCSVCommandMixin, BulkCSVImporter, BaseCommand):
 
 class ImportCSVCommand(ImportCSVCommandMixin, CSVImporter, BaseCommand):
 
-    def _post_import_rows(self, created_count, updated_count):
+    def _post_import_rows(self, created_count, updated_count=0):
         self.stdout.write('Created {created} {model_name} and {updated} updated.'.format(
             created=created_count,
             model_name=self.model_class._meta.verbose_name_plural,

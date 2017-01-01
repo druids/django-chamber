@@ -15,7 +15,7 @@ def load_fixture(file_name, orm):
     def get_model_southern_style(*args):
         try:
             return orm['.'.join(args)]
-        except:
+        except KeyError:
             return original_get_model(*args)
 
     models.get_model = get_model_southern_style
