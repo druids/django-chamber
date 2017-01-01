@@ -29,4 +29,7 @@ install:
 
 # command to run tests
 script:
-   coverage run --omit */site-packages/*,*/migrations/*,*/lib/* manage.py test test_chamber.tests --settings=dj.settings.settings -v 2
+    coverage run --rcfile=$(pwd)/../.coveragerc manage.py test test_chamber.tests --settings=dj.settings.settings -v 2
+
+after_success:
+    coveralls

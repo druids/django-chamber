@@ -1,0 +1,3 @@
+[run]
+source = chamber
+omit = */site-packages/*,*/migrations/*,*/lib/*
