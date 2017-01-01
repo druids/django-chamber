@@ -1,5 +1,7 @@
 # django-chamber
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/012d28c820fd4b19a783618c05d7a0a9)](https://www.codacy.com/app/lukas-rychtecky/django-chamber?utm_source=github.com&utm_medium=referral&utm_content=druids/django-chamber&utm_campaign=badger)
+
 Utilities library for [django-is-core](https://github.com/matllubos/django-is-core/tree/v1.3).
 
 ## Reference
