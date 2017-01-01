@@ -43,7 +43,7 @@ pip:
 
 initvirtualenv:
 	virtualenv -p $(PYTHON) --no-site-packages $(VIRTUAL_ENV)
-	$(PYTHON_BIN)/pip install --upgrade pip==1.5
+	$(PYTHON_BIN)/pip install --upgrade
 	$(PYTHON_BIN)/pip install setuptools --no-use-wheel --upgrade
 
 bootstrap: initvirtualenv pip
@@ -86,9 +86,9 @@ runserver:
 
 install: cleanvar bootstrap initlog linklibrary initdb syncdb initdata initenv
 
-update: clean cleanvirtualenv cleanjs bootstrap syncdb installjs initenv
+update: clean cleanvirtualenv cleanjs bootstrap syncdb initenv
 
 include build/Makefile.$(OS)
 
 linklibrary:
-	ln -sf $$(pwd)/../chamber/ $$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())");
+	ln -sf $$(pwd)/../chamber/ $$($(PYTHON_BIN)/python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())");
