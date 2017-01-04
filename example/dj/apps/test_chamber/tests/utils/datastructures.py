@@ -2,9 +2,9 @@ from __future__ import unicode_literals
 
 from django.test import TestCase
 
-from germanium.tools import assert_equal, assert_raises
+from chamber.utils.datastructures import (ChoicesEnum, ChoicesNumEnum, Enum, NumEnum, OrderedSet)
 
-from chamber.utils.datastructures import Enum, NumEnum, ChoicesEnum, ChoicesNumEnum, OrderedSet
+from germanium.tools import assert_equal, assert_raises
 
 
 class DatastructuresTestCase(TestCase):

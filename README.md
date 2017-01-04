@@ -3,6 +3,8 @@
 [![Build
 Status](https://travis-ci.org/druids/django-chamber.svg?branch=master)](https://travis-ci.org/druids/django-chamber)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/012d28c820fd4b19a783618c05d7a0a9)](https://www.codacy.com/app/lukas-rychtecky/django-chamber?utm_source=github.com&utm_medium=referral&utm_content=druids/django-chamber&utm_campaign=badger)
+[![Coverage
+Status](https://coveralls.io/repos/github/druids/django-chamber/badge.svg?branch=master)](https://coveralls.io/github/druids/django-chamber?branch=master)
 
 Utilities library for [django-is-core](https://github.com/matllubos/django-is-core/tree/v1.3).
 
@@ -209,6 +211,17 @@ Shortcut for [`chamber.shortcuts.filter_or_exclude_by_date`](#chambershortcutsfi
 #### `chamber.shortcuts.exclude_by_date`
 
 Shortcut for [`chamber.shortcuts.filter_or_exclude_by_date`](#chambershortcutsfilter_or_exclude_by_date) with first parameter True.
+
+
+Development
+-----------
+
+For contribution go to `example` directory and call `make install` to install an example project.
+
+Testing
+-------
+
+To run tests go to `example` directory and call `make test`.
 
 
 ## License
