@@ -1,13 +1,13 @@
 import unicodedata
 
 from django.utils.functional import cached_property
-from django.utils.safestring import mark_safe, SafeData
-from django.utils.text import normalize_newlines
 from django.utils.html import escape
-from django.template.defaultfilters import stringfilter
+from django.utils.safestring import SafeData, mark_safe
+from django.utils.text import normalize_newlines
 
 
 def remove_accent(string_with_diacritics):
+    "Removes a diacritics from a given string"
     return unicodedata.normalize('NFKD', string_with_diacritics).encode('ASCII', 'ignore').decode('ASCII')
 
 
