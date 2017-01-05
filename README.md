@@ -6,7 +6,8 @@ Status](https://travis-ci.org/druids/django-chamber.svg?branch=master)](https://
 [![Coverage
 Status](https://coveralls.io/repos/github/druids/django-chamber/badge.svg?branch=master)](https://coveralls.io/github/druids/django-chamber?branch=master)
 
-Utilities library for [django-is-core](https://github.com/matllubos/django-is-core/tree/v1.3).
+This library contains useful functions and classes mainly for a web development with Django (form and model fields,
+shortcuts, advanced datastructure, decoraters etc.). For more details see examples below.
 
 ## Reference
 
@@ -50,6 +51,16 @@ Maximum upload size can be specified in project settings under `MAX_FILE_UPLOAD_
 `django.db.models.CharField` that stores `NULL` but returns ''.
 
 ### Utils
+
+#### `chamber.utils.remove_accent`
+
+```python
+remove_accent('ěščřžýáíé') # 'escrzyaie'
+```
+
+#### `chamber.utils.get_class_method`
+
+It returns a method of a given class or instance.
 
 #### `chamber.utils.datastructures.AbstractEnum`
 
