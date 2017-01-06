@@ -9,8 +9,8 @@ from django.test import TestCase
 
 from chamber.utils import remove_accent, get_class_method
 
-from germanium.anotations import data_provider
-from germanium.tools import assert_equal
+from germanium.anotations import data_provider # NOQA
+from germanium.tools import assert_equal # NOQA
 
 
 class TestClass(object):
