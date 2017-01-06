@@ -11,7 +11,7 @@ shortcuts, advanced datastructure, decoraters etc.). For more details see exampl
 
 ## Reference
 
-### Forms
+### 1. Forms
 
 #### `chamber.forms.fields.DecimalField`
 
@@ -21,7 +21,7 @@ shortcuts, advanced datastructure, decoraters etc.). For more details see exampl
 
 Widget for safe rendering of readonly form values.
 
-### Models
+### 2. Models
 
 #### `chamber.models.fields.SouthMixin`
 
@@ -49,6 +49,85 @@ Maximum upload size can be specified in project settings under `MAX_FILE_UPLOAD_
 #### `chamber.models.fields.CharNullField`
 
 `django.db.models.CharField` that stores `NULL` but returns ''.
+
+### 3. SmartQuerySet `chamber.models.SmartQuerySet`
+SmartModel introduced to Chamber uses by default a modified QuerySet with some convenience filters. 
+
+If you are overriding model manager of a SmartModel, you should incorporate `SmartQuerySet` in order not to lose its benefits and to follow the Rule of the Least Surprise (everyone using your SmartModel will assume the custom filters to be there).
+
+1. If the manager is created using the `QuerySet.as_manager()` method, your custom queryset should subclass `SmartQuerySet` instead the one from Django.
+2. If you have a new manager created by subclassing `models.Manager` from Django, you should override the `get_queryset` method as shown in Django docs [here](https://docs.djangoproject.com/en/1.10/topics/db/managers/#calling-custom-queryset-methods-from-the-manager).
+
+List of the added filters follows.
+
+#### 3.1 `fast_distinct()`
+Returns same result as regular `distinct()` but is much faster especially in PostgreSQL which performs distinct on all DB columns. The optimization is achieved by doing a second query and the `__in` operator. If you have queryset `qs` of `MyModel` then `fast_distinct()` equals to calling
+```python
+MyModel.objects.filter(pk__in=qs.values_list('pk', flat=True))
+```
+
+
+### 4. Model Dispatchers
+
+Model dispatchers are a way to reduce complexity of `_pre_save` and `_post_save` methods of the SmartModel. A common use-case of these methods is to perform some action based on the change of the model, e.g. send a notification e-mail when the state of the invoice changes.
+
+Better alternative is to define a handler function encapsulating the action that should happen when the model changes in a certain way. This handler is registered on the model using a proper dispatcher.
+
+So far, there are two types of dispatchers but you are free to subclass the `BaseDispatcher` class to create your own, see the code as reference. During save of the model, the `__call__` method of all dispatchers is invoked with following parameters:
+
+1. `obj` ... instance of the model that is being saved
+2. `changed_fields` ... list of field names that was changed since the last save
+3. `*args` ... custom arguments passed to the save method (can be used to pass additional arguments to your custom dispatchers)
+4. `**kwargs` ... custom keyword arguments passed to the save method
+
+The moment when the handler should be fired may be important. Therefore, you can register the dispatcher either in the `pre_save_dispatchers` group or `post_save_dispatchers` group. Both groups are dispatched immediately after the `_pre_save` or `_post_save` method respectively.
+
+When the handler is fired, it is passed a single argument -- the instance of the SmartModel that is being saved. Here is an example of a handler that is registered on a `User` model:
+```
+def send_email(user):
+    # Code that actually sends the e-mail
+    send_html_email(recipient=user.email, subject='Your profile was updated')
+```
+
+#### 4.1 Property Dispatcher
+`chamber.models.dispatchers.StateDispatcher` is a versatile dispatcher that fires the given handler when a specified property of the model evaluates to `True`.
+
+The example shows how to to register the aforementioned `send_email` handler to be dispatched after saving the object if the property `should_send_email` returns `True`.
+```python
+class MySmartModel(chamber_models.SmartModel):
+    
+    email_sent = models.BooleanField()
+
+    post_save_dispatchers = (
+        PropertyDispatcher(send_email, 'should_send_email'),
+    )
+    
+    @property
+    def should_send_email(self):
+        return not self.email_sent
+```
+
+#### 4.2 State Dispatcher
+In the following example, where we register `my_handler` function to be dispatched during `_pre_save` method when the state changes to `SECOND`. This is done using `chamber.models.dispatchers.StateDispatcher`. 
+
+```python
+def my_handler(my_smart_model):
+    # Do that useful stuff
+    pass
+
+
+class MySmartModel(chamber_models.SmartModel):
+
+    STATE = ChoicesNumEnum(
+        ('FIRST', _('first'), 1),
+        ('SECOND', _('second'), 2),
+    )
+    state = models.IntegerField(choices=STATE.choices, default=STATE.FIRST)
+
+    pre_save_dispatchers = (
+        StateDispatcher(my_handler, STATE, state, STATE.SECOND),
+    )
+```
 
 ### Utils
 

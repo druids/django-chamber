@@ -2,17 +2,18 @@ from __future__ import unicode_literals
 
 from datetime import timedelta
 
-from django.test import TransactionTestCase, TestCase
-from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.test import TransactionTestCase
+from django.utils import timezone
 
-from germanium.tools import assert_equal, assert_raises, assert_true, assert_false
-
-from test_chamber.models import DiffModel, ComparableModel, TestSmartModel, CSVRecord
-
-from chamber.models import Comparator, ChangedFields
 from chamber.exceptions import PersistenceException
+from chamber.models import ChangedFields, Comparator
 
+from germanium.tools import assert_equal, assert_false, assert_raises, assert_true  # pylint: disable=E0401
+
+from test_chamber.models import ComparableModel, DiffModel, RelatedSmartModel, TestSmartModel  # pylint: disable=E0401
+
+from .dispatchers import *
 from .fields import *
 
 
@@ -265,3 +266,12 @@ class ModelsTestCase(TransactionTestCase):
         assert_equal(obj.name, 'test post save')
         obj.delete()
         assert_equal(obj.name, 'test post delete')
+
+    def test_smart_queryset_fast_distinct(self):
+        t = TestSmartModel.objects.create(name='name')
+        RelatedSmartModel.objects.create(test_smart_model=t)
+        RelatedSmartModel.objects.create(test_smart_model=t)
+        qs = TestSmartModel.objects.filter(test_smart_models__test_smart_model=t)
+        assert_equal(qs.count(), 2)
+        assert_equal(tuple(qs.values_list('pk', flat=True)), (t.pk, t.pk))
+        assert_equal(qs.fast_distinct().count(), 1)

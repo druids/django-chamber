@@ -6,7 +6,11 @@ from django.utils.translation import ugettext_lazy as _
 
 from chamber import models as chamber_models
 from chamber.models import fields as chamber_fields
-from chamber.utils.datastructures import SubstatesChoicesNumEnum, ChoicesNumEnum, SequenceChoicesNumEnum
+from chamber.models.dispatchers import PropertyDispatcher, StateDispatcher
+from chamber.utils.datastructures import ChoicesNumEnum, SequenceChoicesNumEnum, SubstatesChoicesNumEnum
+
+from .handlers import (create_test_dispatchers_model_handler, create_test_fields_model_handler,
+                       create_test_smart_model_handler)
 
 
 class ShortcutsModel(models.Model):
@@ -27,6 +31,10 @@ class ComparableModel(chamber_models.ComparableModelMixin, models.Model):
 
 class TestSmartModel(chamber_models.SmartModel):
     name = models.CharField(max_length=100)
+
+
+class RelatedSmartModel(chamber_models.SmartModel):
+    test_smart_model = models.ForeignKey(TestSmartModel, related_name='test_smart_models')
 
 
 class BackendUser(AbstractBaseUser):
@@ -76,3 +84,29 @@ class TestFieldsModel(chamber_models.SmartModel):
                                                               default=STATE.NOT_OK)
     state_graph = chamber_models.EnumSequencePositiveIntegerField(verbose_name=_('graph'), null=True, blank=True,
                                                                   enum=GRAPH)
+
+
+class TestDispatchersModel(chamber_models.SmartModel):
+
+    STATE = ChoicesNumEnum(
+        ('FIRST', _('first'), 1),
+        ('SECOND', _('second'), 2),
+    )
+    state = models.IntegerField(null=True, blank=False, choices=STATE.choices, default=STATE.FIRST)
+
+    pre_save_dispatchers = (
+        StateDispatcher(create_test_smart_model_handler, STATE, state, STATE.SECOND),
+    )
+
+    post_save_dispatchers = (
+        PropertyDispatcher(create_test_fields_model_handler, 'always_dispatch'),
+        PropertyDispatcher(create_test_dispatchers_model_handler, 'never_dispatch'),
+    )
+
+    @property
+    def always_dispatch(self):
+        return True
+
+    @property
+    def never_dispatch(self):
+        return False
