@@ -183,27 +183,28 @@ class SmartModel(AuditModel):
             raise ValidationError(errors)
         super(SmartModel, self).full_clean(exclude=exclude, *args, **kwargs)
 
-    def _clean_save(self):
-        self._persistence_clean()
+    def _clean_save(self, *args, **kwargs):
+        self._persistence_clean(*args, **kwargs)
 
-    def _clean_delete(self):
-        self._persistence_clean()
+    def _clean_delete(self, *args, **kwargs):
+        self._persistence_clean(*args, **kwargs)
 
-    def _clean_pre_save(self):
-        self._clean_save()
+    def _clean_pre_save(self, *args, **kwargs):
+        self._clean_save(*args, **kwargs)
 
-    def _clean_pre_delete(self):
-        self._clean_delete()
+    def _clean_pre_delete(self, *args, **kwargs):
+        self._clean_delete(*args, **kwargs)
 
-    def _clean_post_save(self):
-        self._clean_save()
+    def _clean_post_save(self, *args, **kwargs):
+        self._clean_save(*args, **kwargs)
 
-    def _clean_post_delete(self):
-        self._clean_delete()
+    def _clean_post_delete(self, *args, **kwargs):
+        self._clean_delete(*args, **kwargs)
 
-    def _persistence_clean(self):
+    def _persistence_clean(self, *args, **kwargs):
+        exclude = kwargs.pop('exclude', None)
         try:
-            self.full_clean()
+            self.full_clean(exclude=exclude)
         except ValidationError as er:
             if hasattr(er, 'error_dict'):
                 raise PersistenceException(', '.join(
@@ -232,14 +233,14 @@ class SmartModel(AuditModel):
         self._pre_save(change, self.changed_fields, *args, **kwargs)
 
         if is_cleaned_pre_save:
-            self._clean_pre_save()
+            self._clean_pre_save(*args, **kwargs)
 
         super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                      update_fields=update_fields)
         self._post_save(change, self.changed_fields, *args, **kwargs)
 
         if is_cleaned_post_save:
-            self._clean_post_save()
+            self._clean_post_save(*args, **kwargs)
         self.post_save.send()
 
     def _post_save(self, *args, **kwargs):
@@ -267,14 +268,14 @@ class SmartModel(AuditModel):
         self._pre_delete(*args, **kwargs)
 
         if is_cleaned_pre_delete:
-            self._clean_pre_delete()
+            self._clean_pre_delete(*args, **kwargs)
 
         super(SmartModel, self).delete(*args, **kwargs)
 
         self._post_delete(*args, **kwargs)
 
         if is_cleaned_post_delete:
-            self._clean_post_delete()
+            self._clean_post_delete(*args, **kwargs)
 
     def _post_delete(self, *args, **kwargs):
         pass
