@@ -278,3 +278,6 @@ max-public-methods=99
 # Exceptions that will emit a warning when being caught. Defaults to
 # "Exception"
 overgeneral-exceptions=Exception
+
+[GENERAL]
+init-hook='import sys; import os; sys.path.append(os.path.join(os.getcwd(), "example", "var", "ve"))'
