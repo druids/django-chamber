@@ -1,16 +1,17 @@
 # -*- coding: UTF-8 -*-
 from __future__ import unicode_literals
 
-from .datastructures import * # NOQA
-from .decorators import * # NOQA
-
-from django.utils.functional import cached_property
 from django.test import TestCase
+from django.utils.functional import cached_property
+from django.utils.safestring import SafeData, mark_safe
 
-from chamber.utils import remove_accent, get_class_method
+from chamber.utils import get_class_method, keep_spacing, remove_accent
 
-from germanium.anotations import data_provider
-from germanium.tools import assert_equal
+from germanium.anotations import data_provider  # NOQA
+from germanium.tools import assert_equal, assert_true  # NOQA
+
+from .datastructures import *  # NOQA
+from .decorators import *  # NOQA
 
 
 class TestClass(object):
@@ -44,3 +45,17 @@ class UtilsTestCase(TestCase):
     @data_provider(classes_and_method_names)
     def test_should_return_class_method(self, expected_method, cls_or_inst, method_name):
         assert_equal(expected_method, get_class_method(cls_or_inst, method_name))
+
+    values_for_keep_spacing = [
+        ['Hello &lt;b&gt; escaped&lt;/b&gt; <br />world', 'Hello <b> escaped</b> \nworld', True],
+        ['Hello <b> escaped</b> <br />world', 'Hello <b> escaped</b> \nworld', False],
+        ['Hello &lt;b&gt; escaped&lt;/b&gt; <br />world', 'Hello <b> escaped</b> \r\nworld', True],
+        ['Hello <b> escaped</b> <br />world', 'Hello <b> escaped</b> \r\nworld', False],
+        ['Hello <b> escaped</b> <br />world', mark_safe('Hello <b> escaped</b> \r\nworld'), True]
+    ]
+
+    @data_provider(values_for_keep_spacing)
+    def test_should_keep_spacing(self, expected, value, autoescape):
+        escaped_value = keep_spacing(value, autoescape)
+        assert_equal(expected, escaped_value)
+        assert_true(isinstance(escaped_value, SafeData))

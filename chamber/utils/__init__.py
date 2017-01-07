@@ -28,9 +28,12 @@ def get_class_method(cls_or_inst, method_name):
 
 
 def keep_spacing(value, autoescape=True):
+    """
+    When a given `str` contains multiple spaces it keeps first space and others are replaces by &nbsp;. Newlines
+    converts into HTML's <br>.
+    """
     autoescape = autoescape and not isinstance(value, SafeData)
     value = normalize_newlines(value)
     if autoescape:
         value = escape(value)
-    value = mark_safe(value.replace('  ', ' &nbsp;'))
-    return mark_safe(value.replace('\n', '<br />'))
+    return mark_safe(value.replace('  ', ' &nbsp;').replace('\n', '<br />'))
