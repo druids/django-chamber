@@ -27,6 +27,11 @@ class ModelFieldsTestCase(TransactionTestCase):
         assert_equal(self.inst.decimal, 3)
         assert_raises(PersistenceException, change_and_save, self.inst, decimal=2.99)
         assert_raises(PersistenceException, change_and_save, self.inst, decimal=10.00001)
+        try:
+            change_and_save(self.inst, decimal=11.1)
+            assert_true(False, 'Previous `change_and_save` suppose to raise an exception')
+        except Exception as ex:
+            assert_true('decimal: ' in str(ex), 'Exception message suppose contains a field name.')
 
     def test_subchoices_field(self):
         change_and_save(self.inst, state_reason=TestFieldsModel.STATE_REASON.SUB_OK_2)
