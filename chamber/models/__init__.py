@@ -155,7 +155,15 @@ class Signal(object):
         [fun(self.obj) for fun in self.connected_functions]
 
 
+class SmartQuerySet(models.QuerySet):
+
+    def fast_distinct(self):
+        return self.model.objects.filter(pk__in=self.values_list('pk', flat=True))
+
+
 class SmartModel(AuditModel):
+
+    objects = SmartQuerySet.as_manager()
 
     def __init__(self, *args, **kwargs):
         super(SmartModel, self).__init__(*args, **kwargs)
@@ -217,6 +225,11 @@ class SmartModel(AuditModel):
     def _pre_save(self, *args, **kwargs):
         pass
 
+    def _call_dispatcher_group(self, group_name, changed_fields, *args, **kwargs):
+        if hasattr(self, group_name):
+            for dispatcher in getattr(self, group_name):
+                dispatcher(self, changed_fields, *args, **kwargs)
+
     def _save(self, is_cleaned_pre_save=None, is_cleaned_post_save=None, force_insert=False, force_update=False,
               using=None, update_fields=None, *args, **kwargs):
         is_cleaned_pre_save = (
@@ -230,6 +243,7 @@ class SmartModel(AuditModel):
         kwargs.update(self._get_save_extra_kwargs())
 
         self._pre_save(change, self.changed_fields, *args, **kwargs)
+        self._call_dispatcher_group('pre_save_dispatchers', self.changed_fields, *args, **kwargs)
 
         if is_cleaned_pre_save:
             self._clean_pre_save()
@@ -237,6 +251,7 @@ class SmartModel(AuditModel):
         super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                      update_fields=update_fields)
         self._post_save(change, self.changed_fields, *args, **kwargs)
+        self._call_dispatcher_group('post_save_dispatchers', self.changed_fields, *args, **kwargs)
 
         if is_cleaned_post_save:
             self._clean_post_save()
