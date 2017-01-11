@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 import os
 from uuid import uuid4 as uuid
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import FileField as OriginFileField
-from django.core.exceptions import ValidationError
 from django.db.models.fields import DecimalField as OriginDecimalField
 from django.forms import forms
 from django.template.defaultfilters import filesizeformat
@@ -15,13 +15,13 @@ from django.utils.translation import ugettext
 
 from chamber import config
 from chamber.forms.fields import DecimalField as DecimalFormField
-from chamber.utils.datastructures import SubstatesChoicesNumEnum, SequenceChoicesEnumMixin
+from chamber.utils.datastructures import SequenceChoicesEnumMixin, SubstatesChoicesNumEnum
+
 
 try:
     from sorl.thumbnail import ImageField as OriginImageField
 except ImportError:
     from django.db.models import ImageField as OriginImageField
-
 
 
 class SouthMixin(object):
@@ -138,23 +138,32 @@ class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
             kwargs['choices'] = self.enum.choices
         super(SubchoicesPositiveIntegerField, self).__init__(*args, **kwargs)
 
+    def _get_subvalue(self, model_instance):
+        return getattr(model_instance, self.subchoices_field_name)
+
     def clean(self, value, model_instance):
-        supvalue = getattr(model_instance, self.subchoices_field_name)
-        if self.enum and supvalue not in self.enum.categories:
+        if self.enum and self._get_subvalue(model_instance) not in self.enum.categories:
             return None
         else:
             return super(SubchoicesPositiveIntegerField, self).clean(value, model_instance)
 
+    def _raise_error_if_value_should_be_empty(self, value, subvalue):
+        if self.enum and subvalue not in self.enum.categories and value is not None:
+            raise ValidationError(ugettext('Value must be empty'))
+
+    def _raise_error_if_value_not_allowed(self, value, subvalue, model_instance):
+        allowed_values = self.enum.get_allowed_states(getattr(model_instance, self.subchoices_field_name))
+        if subvalue in self.enum.categories and value not in allowed_values:
+            raise ValidationError(ugettext('Allowed choices are {}.').format(
+                ', '.join(('{} ({})'.format(*(self.enum.get_label(val), val)) for val in allowed_values))
+            ))
+
     def validate(self, value, model_instance):
-        if self.enum:
-            supvalue = getattr(model_instance, self.subchoices_field_name)
-            allowed_values = self.enum.get_allowed_states(getattr(model_instance, self.subchoices_field_name))
-            if self.enum and supvalue not in self.enum.categories and value is not None:
-                raise ValidationError(ugettext('Value must be empty'))
-            elif supvalue in self.enum.categories and value not in allowed_values:
-                raise ValidationError(ugettext('Allowed choices are {}.').format(
-                    ', '.join(('{} ({})'.format(*(self.enum.get_label(val), val)) for val in allowed_values))
-                ))
+        if not self.enum:
+            return
+
+        self._raise_error_if_value_should_be_empty(value, self._get_subvalue(model_instance))
+        self._raise_error_if_value_not_allowed(value, self._get_subvalue(model_instance), model_instance)
 
 
 class EnumSequenceFieldMixin(object):

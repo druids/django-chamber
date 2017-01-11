@@ -1,12 +1,13 @@
+from django.core.exceptions import ValidationError
 from django.test import TransactionTestCase
 
-from chamber.shortcuts import change_and_save
-from chamber.models.fields import generate_random_upload_path
-from germanium.tools import assert_equal, assert_raises, assert_true, assert_is_none
-
 from chamber.exceptions import PersistenceException
+from chamber.models.fields import generate_random_upload_path
+from chamber.shortcuts import change_and_save
 
-from test_chamber.models import TestFieldsModel, CSVRecord
+from germanium.tools import assert_equal, assert_is_none, assert_raises, assert_true  # pylint: disable=E0401
+
+from test_chamber.models import CSVRecord, TestFieldsModel  # pylint: disable=E0401
 
 
 class ModelFieldsTestCase(TransactionTestCase):
@@ -27,6 +28,11 @@ class ModelFieldsTestCase(TransactionTestCase):
         assert_equal(self.inst.decimal, 3)
         assert_raises(PersistenceException, change_and_save, self.inst, decimal=2.99)
         assert_raises(PersistenceException, change_and_save, self.inst, decimal=10.00001)
+        try:
+            change_and_save(self.inst, decimal=11.1)
+            assert_true(False, 'Previous `change_and_save` suppose to raise an exception')
+        except PersistenceException as ex:
+            assert_true('decimal: ' in str(ex), 'Exception message was supposed to contain a field name.')
 
     def test_subchoices_field(self):
         change_and_save(self.inst, state_reason=TestFieldsModel.STATE_REASON.SUB_OK_2)
@@ -39,6 +45,17 @@ class ModelFieldsTestCase(TransactionTestCase):
                         state_reason=TestFieldsModel.STATE_REASON.SUB_NOT_OK_2)
         assert_equal(self.inst.state, TestFieldsModel.STATE.NOT_OK)
         assert_equal(self.inst.state_reason, TestFieldsModel.STATE_REASON.SUB_NOT_OK_2)
+
+    def test_subchoices_field_value_should_be_empty(self):
+        self.inst.state = 4  # setting an invalid value
+        try:
+            getattr(TestFieldsModel, '_meta').get_field_by_name('state_reason')[0].validate(
+                TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst)  # accessing `_meta` via getattr due Pylint
+            assert_true(False, 'Field validation should raise an error')
+        except ValidationError as ex:
+            assert_equal(['Value must be empty'], ex.messages)
+        assert_is_none(getattr(TestFieldsModel, '_meta').get_field_by_name('state_reason')[0].clean(
+            TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst))  # accessing `_meta` via getattr due Pylint
 
     def test_prev_value_field(self):
         # In case of `add`, value of state is copied to state_prev
