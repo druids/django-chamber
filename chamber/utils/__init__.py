@@ -1,3 +1,4 @@
+import inspect
 import unicodedata
 
 from django.utils.functional import cached_property
@@ -37,3 +38,14 @@ def keep_spacing(value, autoescape=True):
     if autoescape:
         value = escape(value)
     return mark_safe(value.replace('  ', ' &nbsp;').replace('\n', '<br />'))
+
+
+def call_method_with_unknown_input(method, **fun_kwargs):
+    method_kwargs_names = inspect.getargspec(method)[0][1:]
+
+    method_kwargs = {arg_name: fun_kwargs[arg_name] for arg_name in method_kwargs_names if arg_name in fun_kwargs}
+
+    if len(method_kwargs_names) == len(method_kwargs):
+        return method(**method_kwargs)
+    else:
+        raise RuntimeError('Invalid method parameters')
