@@ -1,15 +1,15 @@
 from __future__ import unicode_literals
 
-from django.test import TestCase
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.test import TestCase
 
-from germanium.tools import assert_equal, assert_raises
-
-from chamber.multidomains.domain import get_domain_choices, get_user_class, get_current_domain, get_domain, Domain
+from chamber.multidomains.domain import Domain, get_current_domain, get_domain, get_domain_choices, get_user_class
 from chamber.multidomains.urlresolvers import reverse
 
-from test_chamber.models import BackendUser, FrontendUser
+from germanium.tools import assert_equal, assert_raises  # pylint: disable=E0401
+
+from test_chamber.models import BackendUser, FrontendUser  # pylint: disable=E0401
 
 
 class MultidomainsTestCase(TestCase):

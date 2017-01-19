@@ -10,7 +10,7 @@ from django.utils import timezone
 from chamber.shortcuts import (bulk_change, bulk_change_and_save, bulk_save, change, change_and_save, distinct_field,
                                exclude_by_date, filter_by_date, get_object_or_404, get_object_or_none)
 
-from germanium.tools import assert_equal, assert_is_none, assert_raises
+from germanium.tools import assert_equal, assert_is_none, assert_raises  # pylint: disable=E0401
 
 from test_chamber.models import ShortcutsModel
 

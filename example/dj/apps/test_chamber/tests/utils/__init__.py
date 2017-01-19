@@ -7,8 +7,8 @@ from django.utils.safestring import SafeData, mark_safe
 
 from chamber.utils import get_class_method, keep_spacing, remove_accent
 
-from germanium.anotations import data_provider  # NOQA
-from germanium.tools import assert_equal, assert_true  # NOQA
+from germanium.anotations import data_provider  # pylint: disable=E0401
+from germanium.tools import assert_equal, assert_true  # pylint: disable=E0401
 
 from .datastructures import *  # NOQA
 from .decorators import *  # NOQA

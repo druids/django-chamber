@@ -35,6 +35,10 @@ class TestProxySmartModel(TestSmartModel):
 
 class TestPreProxySmartModel(TestSmartModel):
 
+    def __init__(self, **kwargs):
+        self.name = None
+        super(TestPreProxySmartModel, self).__init__(**kwargs)
+
     def _pre_save(self, *args, **kwargs):
         self.name = 'test pre save'
 
@@ -46,6 +50,10 @@ class TestPreProxySmartModel(TestSmartModel):
 
 
 class TestPostProxySmartModel(TestSmartModel):
+
+    def __init__(self, **kwargs):
+        self.name = None
+        super(TestPostProxySmartModel, self).__init__(**kwargs)
 
     def _post_save(self, *args, **kwargs):
         self.name = 'test post save'

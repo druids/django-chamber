@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 from django.core.management import call_command
 from django.test import TestCase
 
-from germanium.tools import assert_equal
+from germanium.tools import assert_equal  # pylint: disable=E0401
 
-from test_chamber.importers import BulkCSVRecordImporter, CSVRecordImporter
-from test_chamber.models import CSVRecord
+from test_chamber.importers import BulkCSVRecordImporter, CSVRecordImporter  # pylint: disable=E0401
+from test_chamber.models import CSVRecord  # pylint: disable=E0401
 
 
 class ImporterTestCase(TestCase):
