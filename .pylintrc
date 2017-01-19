@@ -116,7 +116,7 @@ inlinevar-rgx=[A-Za-z_][A-Za-z0-9_]*$
 good-names=i,j,k,ex,Run,_
 
 # Bad variable names which should always be refused, separated by a comma
-bad-names=foo,bar,baz,toto,tutu,tata
+bad-names=foo,baz,toto,tutu,tata
 
 # Regular expression which should only match function or class names that do
 # not require a docstring.
