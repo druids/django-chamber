@@ -15,6 +15,7 @@ from test_chamber.models import ComparableModel, DiffModel, RelatedSmartModel, T
 
 from .dispatchers import *
 from .fields import *
+from .humanized_helpers import *
 
 
 class NameComparator(Comparator):

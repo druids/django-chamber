@@ -1,8 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.test import TransactionTestCase
+from django.utils.translation import ugettext_lazy
 
 from chamber.exceptions import PersistenceException
+from chamber.forms import fields as form_fields
 from chamber.models.fields import generate_random_upload_path
 from chamber.shortcuts import change_and_save
 
@@ -50,13 +52,13 @@ class ModelFieldsTestCase(TransactionTestCase):
     def test_subchoices_field_value_should_be_empty(self):
         self.inst.state = 4  # setting an invalid value
         try:
-            getattr(TestFieldsModel, '_meta').get_field_by_name('state_reason')[0].validate(
-                TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst)  # accessing `_meta` via getattr due Pylint
+            TestFieldsModel._meta.get_field_by_name('state_reason')[0].validate(
+                TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst)  # pylint: disable=W0212
             assert_true(False, 'Field validation should raise an error')
         except ValidationError as ex:
             assert_equal(['Value must be empty'], ex.messages)
-        assert_is_none(getattr(TestFieldsModel, '_meta').get_field_by_name('state_reason')[0].clean(
-            TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst))  # accessing `_meta` via getattr due Pylint
+        assert_is_none(TestFieldsModel._meta.get_field_by_name('state_reason')[0].clean(
+            TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst))  # pylint: disable=W0212
 
     def test_prev_value_field(self):
         # In case of `add`, value of state is copied to state_prev
@@ -114,3 +116,19 @@ class ModelFieldsTestCase(TransactionTestCase):
         with open('data/test.jpg', 'rb') as f:
             assert_is_none(self.inst.image)
             assert_raises(PersistenceException, self.inst.image.save, 'image.jpeg', File(f))
+
+    def test_should_validate_positive_price_field(self):
+        assert_raises(PersistenceException, change_and_save, self.inst, total_price=-100)
+
+    def test_should_check_price_form_field(self):
+        field = TestFieldsModel._meta.get_field_by_name('price')[0]
+        assert_equal(ugettext_lazy('EUR'), field.currency)
+        form_field = field.formfield()
+        assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))
+        assert_equal(field.currency, form_field.widget.placeholder)
+
+    def test_should_check_total_price_form_field(self):
+        field = TestFieldsModel._meta.get_field_by_name('total_price')[0]
+        assert_equal(ugettext_lazy('CZK'), field.currency)
+        form_field = field.formfield()
+        assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))

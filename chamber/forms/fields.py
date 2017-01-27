@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
-from django.forms import DecimalField as OriginDecimalField
+from django import forms
+from django.utils.translation import ugettext
 
 
-class DecimalField(OriginDecimalField):
+class DecimalField(forms.DecimalField):
 
     def __init__(self, *args, **kwargs):
         self.step = kwargs.pop('step', 'any')
@@ -19,3 +20,21 @@ class DecimalField(OriginDecimalField):
         if self.max is not None:
             attrs['max'] = self.max
         return attrs
+
+
+class PriceNumberInput(forms.NumberInput):
+
+    def __init__(self, currency, *args, **kwargs):
+        super(PriceNumberInput, self).__init__(*args, **kwargs)
+        self.placeholder = currency
+
+
+class PriceField(DecimalField):
+
+    widget = PriceNumberInput
+
+    def __init__(self, *args, **kwargs):
+        currency = kwargs.pop('currency', ugettext('CZK'))
+        if 'widget' not in kwargs:
+            kwargs['widget'] = PriceNumberInput(currency)
+        super(PriceField, self).__init__(*args, **kwargs)

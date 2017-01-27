@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+import chamber  # NOQA
 from chamber import models as chamber_models
 from chamber.models import fields as chamber_fields
 from chamber.models.dispatchers import CreatedDispatcher, PropertyDispatcher, StateDispatcher
@@ -87,6 +88,8 @@ class TestFieldsModel(chamber_models.SmartModel):
     file = chamber_models.FileField(verbose_name=_('file'), null=True, blank=True,
                                     allowed_content_types=('application/pdf', 'text/plain'))
     image = chamber_models.FileField(verbose_name=_('image'), null=True, blank=True, max_upload_size=1)
+    price = chamber_models.PriceField(verbose_name=_('price'), null=True, blank=True, currency=_('EUR'))
+    total_price = chamber_models.PositivePriceField(verbose_name=_('total price'), null=True, blank=True)
 
 
 class TestDispatchersModel(chamber_models.SmartModel):
