@@ -54,6 +54,20 @@ Maximum upload size can be specified in project settings under `MAX_FILE_UPLOAD_
 
 `django.db.models.CharField` that stores `NULL` but returns ''.
 
+#### `chamber.models.fields.PriceField`
+
+`chamber.models.fields.DecimalField` with defaults:
+
+- `currency` as `CZK`
+- `decimal_places` as `2`
+- `max_digits` as `10`
+- `humanized` value for a pretty printing via `chamber.models.humanized_helpers.price_humanized`
+
+#### `chamber.models.fields.PositivePriceField`
+
+`chamber.models.fields.PriceField` with a default `django.core.validators.MinValueValidator` set to `0.00`.
+
+
 ### 3. SmartQuerySet `chamber.models.SmartQuerySet`
 SmartModel introduced to Chamber uses by default a modified QuerySet with some convenience filters. 
 
