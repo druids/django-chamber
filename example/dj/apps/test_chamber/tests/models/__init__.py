@@ -13,9 +13,9 @@ from germanium.tools import assert_equal, assert_false, assert_raises, assert_tr
 
 from test_chamber.models import ComparableModel, DiffModel, RelatedSmartModel, TestSmartModel  # pylint: disable=E0401
 
-from .dispatchers import *
-from .fields import *
-from .humanized_helpers import *
+from .dispatchers import *  # NOQA
+from .fields import *  # NOQA
+from .humanized_helpers import *  # NOQA
 
 
 class NameComparator(Comparator):
@@ -124,6 +124,12 @@ class ModelsTestCase(TransactionTestCase):
 
         assert_false(obj1.equals(obj3, comparator))
         assert_false(obj3.equals(obj1, comparator))
+
+    def test_should_raise_exception_due_calling_default_comparator(self):
+        obj1 = ComparableModel.objects.create(name='test')
+        obj2 = ComparableModel.objects.create(name='test')
+
+        assert_raises(NotImplementedError, obj1.equals, obj2, Comparator())
 
     def test_smart_model_clean_pre_save(self):
         assert_raises(PersistenceException, TestProxySmartModel.objects.create, name=10 * 'a')
