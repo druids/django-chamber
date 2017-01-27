@@ -37,6 +37,10 @@ class ImportCSVCommandMixin(object):
 
 class BulkImportCSVCommand(ImportCSVCommandMixin, BulkCSVImporter, BaseCommand):
 
+    def __init__(self, *args, **kwargs):
+        super(BulkImportCSVCommand, self).__init__(*args, **kwargs)
+        self.bar = None
+
     def _pre_import_rows(self, row_count):
         self.bar = pyprind.ProgBar(row_count, stream=ProgressBarStream(self.stdout))
 
@@ -46,7 +50,7 @@ class BulkImportCSVCommand(ImportCSVCommandMixin, BulkCSVImporter, BaseCommand):
     def _post_import_rows(self, created_count, updated_count=0):
         self.stdout.write('\nCreated {created} {model_name}.'.format(
             created=created_count,
-            model_name=self.model_class._meta.verbose_name_plural
+            model_name=self.model_class._meta.verbose_name_plural  # pylint: disable=W0212
         ))
 
 
@@ -55,6 +59,6 @@ class ImportCSVCommand(ImportCSVCommandMixin, CSVImporter, BaseCommand):
     def _post_import_rows(self, created_count, updated_count=0):
         self.stdout.write('Created {created} {model_name} and {updated} updated.'.format(
             created=created_count,
-            model_name=self.model_class._meta.verbose_name_plural,
+            model_name=self.model_class._meta.verbose_name_plural,  # pylint: disable=W0212
             updated=updated_count)
         )

@@ -194,8 +194,8 @@ class OrderedSet(MutableSet):
 
     def __init__(self, *iterable):
         self.end = end = []
-        end += [None, end, end]         # sentinel node for doubly linked list
-        self.map = {}                   # key --> [key, prev, next]
+        end += [None, end, end]  # sentinel node for doubly linked list
+        self.map = {}  # key --> [key, prev, next]
         if iterable is not None:
             self |= iterable
 
@@ -213,9 +213,9 @@ class OrderedSet(MutableSet):
 
     def discard(self, key):
         if key in self.map:
-            key, prev, next = self.map.pop(key)
-            prev[2] = next
-            next[1] = prev
+            key, prev_item, next_item = self.map.pop(key)
+            prev_item[2] = next_item
+            next_item[1] = prev_item
 
     def __iter__(self):
         end = self.end

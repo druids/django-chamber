@@ -24,8 +24,9 @@ setup(
         "Framework :: Django",
     ],
     install_requires=[
-        'Django >= 1.6',
+        'Django>=1.8',
         'Unidecode>=0.04.17',
         'pyprind==2.9.9',
+        'six>=1.10.0',
     ],
-    )
+)

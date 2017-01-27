@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import collections
 
+from itertools import chain
+
 from six import python_2_unicode_compatible
 
 from django.core.exceptions import ValidationError
@@ -12,35 +14,45 @@ from django.utils.encoding import force_text
 from chamber.exceptions import PersistenceException
 from chamber.patch import Options
 
-from .fields import *
+from .fields import *  #  NOQA exposing classes and functions as a module API
+
+
+def many_to_many_field_to_dict(field, instance):
+    if instance.pk is None:
+        # If the object doesn't have a primary key yet, just use an empty
+        # list for its m2m fields. Calling f.value_from_object will raise
+        # an exception.
+        return []
+    else:
+        # MultipleChoiceWidget needs a list of pks, not object instances.
+        return list(field.value_from_object(instance).values_list('pk', flat=True))
+
+
+def should_exclude_field(field, fields, exclude):
+    return (fields and field.name not in fields) or (exclude and field.name in exclude)
+
+
+def field_to_dict(field, instance):
+    """
+    Converts a model field to a dictionary
+    """
+    # avoid a circular import
+    from django.db.models.fields.related import ManyToManyField
+
+    return (many_to_many_field_to_dict(field, instance) if isinstance(field, ManyToManyField)
+            else field.value_from_object(instance))
 
 
 def model_to_dict(instance, fields=None, exclude=None):
     """
     The same implementation as django model_to_dict but editable fields are allowed
     """
-    # avoid a circular import
-    from django.db.models.fields.related import ManyToManyField
 
-    opts = instance._meta
-    data = {}
-    for f in opts.concrete_fields + opts.many_to_many:
-        if fields and f.name not in fields:
-            continue
-        if exclude and f.name in exclude:
-            continue
-        if isinstance(f, ManyToManyField):
-            # If the object doesn't have a primary key yet, just use an empty
-            # list for its m2m fields. Calling f.value_from_object will raise
-            # an exception.
-            if instance.pk is None:
-                data[f.name] = []
-            else:
-                # MultipleChoiceWidget needs a list of pks, not object instances.
-                data[f.name] = list(f.value_from_object(instance).values_list('pk', flat=True))
-        else:
-            data[f.name] = f.value_from_object(instance)
-    return data
+    return {
+        field.name: field_to_dict(field, instance)
+        for field in chain(instance._meta.concrete_fields, instance._meta.many_to_many)  # pylint: disable=W0212
+        if not should_exclude_field(field, fields, exclude)
+    }
 
 
 ValueChange = collections.namedtuple('ValueChange', ('initial', 'current'))
@@ -60,7 +72,7 @@ class ChangedFields(object):
     def diff(self):
         d1 = self.initial_values
         d2 = self.get_instance_dict(self.instance)
-        return {k : ValueChange(v, d2[k]) for k, v in d1.items() if v != d2[k]}
+        return {k: ValueChange(v, d2[k]) for k, v in d1.items() if v != d2[k]}
 
     def __setitem__(self, key, item):
         raise AttributeError('Object is readonly')
@@ -81,7 +93,7 @@ class ChangedFields(object):
         raise AttributeError('Object is readonly')
 
     def has_key(self, k):
-        return self.diff.has_key(k)
+        return k in self.diff
 
     def has_any_key(self, *keys):
         return bool(set(self.keys()) & set(keys))
@@ -101,8 +113,8 @@ class ChangedFields(object):
     def pop(self, *args, **kwargs):
         raise AttributeError('Object is readonly')
 
-    def __cmp__(self, dict):
-        return cmp(self.diff, dict)
+    def __cmp__(self, dictionary):
+        return cmp(self.diff, dictionary)
 
     def __contains__(self, item):
         return item in self.diff

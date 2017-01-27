@@ -1,4 +1,4 @@
-from dj.settings.base import *
+from dj.settings.base import *  # pylint: disable=E0401
 
 
 DEBUG = TEMPLATE_DEBUG = THUMBNAIL_DEBUG = True

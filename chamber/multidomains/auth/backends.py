@@ -16,7 +16,7 @@ class ModelBackend(OridginModelBackend):
         if username is None:
             username = kwargs.get(UserModel.USERNAME_FIELD)
         try:
-            user = UserModel._default_manager.get_by_natural_key(username)
+            user = UserModel._default_manager.get_by_natural_key(username)  # pylint: disable=W0212
             if user.check_password(password):
                 return user
         except UserModel.DoesNotExist:
@@ -35,12 +35,12 @@ class ModelBackend(OridginModelBackend):
             if user_obj.is_superuser:
                 perms = Permission.objects.all()
             else:
-                user_groups_field = get_user_class()._meta.get_field('groups')
+                user_groups_field = get_user_class()._meta.get_field('groups')  # pylint: disable=W0212
                 user_groups_query = 'group__%s' % user_groups_field.related_query_name()
                 perms = Permission.objects.filter(**{user_groups_query: user_obj})
             perms = perms.values_list('content_type__app_label', 'codename').order_by()
-            user_obj._group_perm_cache = set(["%s.%s" % (ct, name) for ct, name in perms])
-        return user_obj._group_perm_cache
+            user_obj._group_perm_cache = set(["%s.%s" % (ct, name) for ct, name in perms])  # pylint: disable=W0212
+        return user_obj._group_perm_cache  # pylint: disable=W0212
 
     def get_user(self, user_id):
         UserModel = get_user_class()

@@ -1,15 +1,11 @@
 from __future__ import unicode_literals
 
 from django.test import TestCase
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import get_language
-
-from germanium.tools import assert_equal, assert_raises
 
 from chamber.utils.decorators import classproperty, singleton, translation_activate_block
 
-from test_chamber.models import BackendUser, FrontendUser
+from germanium.tools import assert_equal  # pylint: disable=E0401
 
 
 class ObjectWithClassProperty(object):

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from chamber.commands import ImportCSVCommand
 
-from test_chamber.models import CSVRecord
+from test_chamber.models import CSVRecord  # pylint: disable=E0401
 
 
 class Command(ImportCSVCommand):

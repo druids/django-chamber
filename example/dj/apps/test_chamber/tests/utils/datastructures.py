@@ -4,7 +4,7 @@ from django.test import TestCase
 
 from chamber.utils.datastructures import ChoicesEnum, ChoicesNumEnum, Enum, NumEnum, OrderedSet
 
-from germanium.tools import assert_equal, assert_raises
+from germanium.tools import assert_equal, assert_raises  # pylint: disable=E0401
 
 
 class DatastructuresTestCase(TestCase):
@@ -16,7 +16,7 @@ class DatastructuresTestCase(TestCase):
         assert_equal(enum.A, 'A')
         assert_equal(enum.B, 'B')
         with assert_raises(AttributeError):
-            enum.C
+            enum.C  # pylint: disable=W0104
 
     def test_num_enum(self):
         enum = NumEnum(
