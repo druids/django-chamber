@@ -15,7 +15,7 @@ def field_init(self, *args, **kwargs):
         self.humanized = humanize
     else:
         self.humanized = self.default_humanized
-    self._init_chamber_patch_(*args, **kwargs)
+    getattr(self, '_init_chamber_patch_')(*args, **kwargs)
 
 
 Field.default_humanized = None

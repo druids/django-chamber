@@ -8,7 +8,9 @@ from chamber.forms import fields as form_fields
 from chamber.models.fields import generate_random_upload_path
 from chamber.shortcuts import change_and_save
 
-from germanium.tools import assert_equal, assert_is_none, assert_is_not_none, assert_raises, assert_true  # pylint: disable=E0401
+from germanium.anotations import data_provider  # pylint: disable=E0401
+from germanium.tools import (assert_equal, assert_is_none,  # pylint: disable=E0401
+                             assert_is_not_none, assert_raises, assert_true)  # pylint: disable=E0401
 
 from test_chamber.models import CSVRecord, TestFieldsModel  # pylint: disable=E0401
 
@@ -52,12 +54,12 @@ class ModelFieldsTestCase(TransactionTestCase):
     def test_subchoices_field_value_should_be_empty(self):
         self.inst.state = 4  # setting an invalid value
         try:
-            TestFieldsModel._meta.get_field_by_name('state_reason')[0].validate(
+            TestFieldsModel._meta.get_field_by_name('state_reason')[0].validate(  # pylint: disable=W0212
                 TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst)  # pylint: disable=W0212
             assert_true(False, 'Field validation should raise an error')
         except ValidationError as ex:
             assert_equal(['Value must be empty'], ex.messages)
-        assert_is_none(TestFieldsModel._meta.get_field_by_name('state_reason')[0].clean(
+        assert_is_none(TestFieldsModel._meta.get_field_by_name('state_reason')[0].clean(  # pylint: disable=W0212
             TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst))  # pylint: disable=W0212
 
     def test_prev_value_field(self):
@@ -121,14 +123,27 @@ class ModelFieldsTestCase(TransactionTestCase):
         assert_raises(PersistenceException, change_and_save, self.inst, total_price=-100)
 
     def test_should_check_price_form_field(self):
-        field = TestFieldsModel._meta.get_field_by_name('price')[0]
+        field = TestFieldsModel._meta.get_field_by_name('price')[0]  # pylint: disable=W0212
         assert_equal(ugettext_lazy('EUR'), field.currency)
         form_field = field.formfield()
         assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))
         assert_equal(field.currency, form_field.widget.placeholder)
 
     def test_should_check_total_price_form_field(self):
-        field = TestFieldsModel._meta.get_field_by_name('total_price')[0]
+        field = TestFieldsModel._meta.get_field_by_name('total_price')[0]  # pylint: disable=W0212
         assert_equal(ugettext_lazy('CZK'), field.currency)
         form_field = field.formfield()
         assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))
+
+    model_fields = (
+        ('price', ugettext_lazy('EUR'), {'max_digits', 'decimal_places'}),
+        ('total_price', ugettext_lazy('CZK'), {'max_digits', 'decimal_places', 'validators'}),
+    )
+
+    @data_provider(model_fields)
+    def test_should_assert_form_field(self, field_name, currency, kwargs_to_remove):
+        field = TestFieldsModel._meta.get_field_by_name(field_name)[0]  # pylint: disable=W0212
+        assert_equal(currency, field.currency)
+        form_field = field.formfield()
+        assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))
+        assert_equal(field.currency, form_field.widget.placeholder)

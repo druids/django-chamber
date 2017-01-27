@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
-import magic  # pylint: disable=E0401
 import os
 from decimal import Decimal
 from uuid import uuid4 as uuid
+
+import magic  # pylint: disable=E0401
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -13,7 +14,7 @@ from django.db.models.fields import DecimalField as OriginDecimalField
 from django.forms import forms
 from django.template.defaultfilters import filesizeformat
 from django.utils.encoding import force_text
-from django.utils.translation import ugettext, ugettext_lazy
+from django.utils.translation import ugettext
 
 from chamber import config
 from chamber.forms import fields as chamber_fields
