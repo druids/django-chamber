@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import magic  # pylint: disable=E0401
 import os
 from uuid import uuid4 as uuid
 
@@ -74,17 +75,35 @@ class RestrictedFileValidator(object):
             return data
 
 
+class AllowedContentTypesFileValidator(object):
+
+    def __init__(self, content_types):
+        self.content_types = content_types
+
+    def __call__(self, data):
+        with magic.Magic(flags=magic.MAGIC_MIME_TYPE) as m:
+            mime_type = m.id_buffer(data.file.read(1024))
+            data.file.seek(0)
+            if mime_type not in self.content_types:
+                raise ValidationError(
+                    ugettext('Unsupported file type')
+                )
+        return data
+
+
 class RestrictedFileFieldMixin(SouthMixin):
     """
     Same as FileField, but you can specify:
-        * content_types - list containing allowed content_types. Example: ['application/pdf', 'image/jpeg']
+        * allowed_content_types - list of allowed content types. Example: ['application/json', 'image/jpeg']
         * max_upload_size - a number indicating the maximum file size allowed for upload in MB.
     """
     def __init__(self, *args, **kwargs):
         max_upload_size = kwargs.pop('max_upload_size', config.CHAMBER_MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
-
+        allowed_content_types = kwargs.pop('allowed_content_types', None)
         super(RestrictedFileFieldMixin, self).__init__(*args, **kwargs)
         self.validators.append(RestrictedFileValidator(max_upload_size))
+        if allowed_content_types:
+            self.validators.append(AllowedContentTypesFileValidator(allowed_content_types))
 
     def get_filename(self, filename):
         """

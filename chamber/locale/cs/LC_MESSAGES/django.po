@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-07-28 21:15+0200\n"
+"POT-Creation-Date: 2017-02-01 11:55+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,16 +18,28 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
-#: models/__init__.py:134
+#: models/__init__.py:148
 msgid "created at"
 msgstr "vytvořeno"
 
-#: models/__init__.py:136
+#: models/__init__.py:150
 msgid "changed at"
 msgstr "upraveno"
 
-#: models/fields.py:63
+#: models/fields.py:69
 #, python-brace-format
 msgid "Please keep filesize under {max}. Current filesize {current}"
 msgstr ""
 "Udržujte velikost souboru pod {max}. Současná velikost souboru je {current}"
+
+#: models/fields.py:89
+msgid "Unsupported file type"
+msgstr "Nepodporovaný typ souboru"
+
+#: models/fields.py:171
+msgid "Value must be empty"
+msgstr "Hodnota musí být prázdná"
+
+#: models/fields.py:176 models/fields.py:206
+msgid "Allowed choices are {}."
+msgstr "Povolené možnosti jsou {}."
