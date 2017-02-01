@@ -28,5 +28,6 @@ setup(
         'Unidecode>=0.04.17',
         'pyprind==2.9.9',
         'six>=1.10.0',
+        'filemagic>=1.6',
     ],
 )
