@@ -6,3 +6,4 @@ coverage==4.0.2
 pyprind==2.9.9
 coveralls==1.1
 filemagic==1.6
+unidecode==0.4.20

@@ -12,7 +12,7 @@ from django.db.models.fields import DecimalField as OriginDecimalField
 from django.forms import forms
 from django.template.defaultfilters import filesizeformat
 from django.utils.encoding import force_text
-from django.utils.translation import ugettext
+from django.utils.translation import ugettext, ugettext_lazy
 
 from chamber import config
 from chamber.forms.fields import DecimalField as DecimalFormField
@@ -25,16 +25,7 @@ except ImportError:
     from django.db.models import ImageField as OriginImageField
 
 
-class SouthMixin(object):
-
-    def south_field_triple(self):
-        from south.modelsinspector import introspector
-        cls_name = '%s.%s' % (self.__class__.__module__, self.__class__.__name__)
-        args, kwargs = introspector(self)
-        return (cls_name, args, kwargs)
-
-
-class DecimalField(SouthMixin, OriginDecimalField):
+class DecimalField(OriginDecimalField):
 
     def __init__(self, *args, **kwargs):
         self.step = kwargs.pop('step', 'any')
@@ -91,7 +82,7 @@ class AllowedContentTypesFileValidator(object):
         return data
 
 
-class RestrictedFileFieldMixin(SouthMixin):
+class RestrictedFileFieldMixin(object):
     """
     Same as FileField, but you can specify:
         * allowed_content_types - list of allowed content types. Example: ['application/json', 'image/jpeg']

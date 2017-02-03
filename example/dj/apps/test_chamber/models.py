@@ -84,6 +84,9 @@ class TestFieldsModel(chamber_models.SmartModel):
                                                               default=STATE.NOT_OK)
     state_graph = chamber_models.EnumSequencePositiveIntegerField(verbose_name=_('graph'), null=True, blank=True,
                                                                   enum=GRAPH)
+    file = chamber_models.FileField(verbose_name=_('file'), null=True, blank=True,
+                                    allowed_content_types=('application/pdf', 'text/plain'))
+    image = chamber_models.FileField(verbose_name=_('image'), null=True, blank=True, max_upload_size=1)
 
 
 class TestDispatchersModel(chamber_models.SmartModel):
