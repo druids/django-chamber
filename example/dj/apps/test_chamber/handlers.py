@@ -17,3 +17,9 @@ def create_test_dispatchers_model_handler(obj):
     from .models import TestDispatchersModel  # NOQA
 
     TestDispatchersModel.objects.create()
+
+
+def create_csv_record_handler(obj):
+    from .models import CSVRecord  # NOQA
+
+    CSVRecord.objects.create()
