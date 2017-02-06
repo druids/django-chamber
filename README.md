@@ -90,7 +90,7 @@ def send_email(user):
 ```
 
 #### 4.1 Property Dispatcher
-`chamber.models.dispatchers.StateDispatcher` is a versatile dispatcher that fires the given handler when a specified property of the model evaluates to `True`.
+`chamber.models.dispatchers.PropertyDispatcher` is a versatile dispatcher that fires the given handler when a specified property of the model evaluates to `True`.
 
 The example shows how to to register the aforementioned `send_email` handler to be dispatched after saving the object if the property `should_send_email` returns `True`.
 ```python
@@ -126,6 +126,22 @@ class MySmartModel(chamber_models.SmartModel):
 
     pre_save_dispatchers = (
         StateDispatcher(my_handler, STATE, state, STATE.SECOND),
+    )
+```
+
+#### 4.2 State Dispatcher
+A common use-case is to perform an action whenever an instance of a particular model is created. `chamber.models.dispatchers.CreatedDispatcher` is provided to accommodate this need. An update of the instance will not trigger the handler.
+
+```python
+def my_handler(my_smart_model):
+    # Do that useful stuff when a new instance of MySmartModel is created
+    pass
+
+
+class MySmartModel(chamber_models.SmartModel):
+
+    post_save_dispatchers = (
+        CreatedDispatcher(my_handler),
     )
 ```
 

@@ -6,7 +6,8 @@ from chamber.shortcuts import change_and_save
 
 from germanium.tools import assert_equal  # pylint: disable=E0401
 
-from test_chamber.models import TestDispatchersModel, TestFieldsModel, TestSmartModel  # pylint: disable=E0401
+from test_chamber.models import (CSVRecord, TestDispatchersModel, TestFieldsModel,  # pylint: disable=E0401
+                                 TestSmartModel)  # pylint: disable=E0401
 
 
 class DispatchersTestCase(TransactionTestCase):
@@ -34,3 +35,10 @@ class DispatchersTestCase(TransactionTestCase):
         TestDispatchersModel.objects.create()
         assert_equal(TestFieldsModel.objects.count(), 1)
         assert_equal(TestDispatchersModel.objects.count(), 1)
+
+    def test_created_dispatcher(self):
+        assert_equal(CSVRecord.objects.count(), 0)
+        m = TestDispatchersModel.objects.create()
+        assert_equal(CSVRecord.objects.count(), 1)
+        change_and_save(m, state=TestDispatchersModel.STATE.SECOND)
+        assert_equal(CSVRecord.objects.count(), 1)

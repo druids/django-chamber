@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import inspect
-
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -11,7 +9,8 @@ class BaseDispatcher(object):
     If you subclass, be sure the __call__ method does not change signature.
     """
     def _validate_init_params(self):
-        raise NotImplementedError
+        if not callable(self.handler):
+            raise ImproperlyConfigured('Registered handler must be a callable.')
 
     def __init__(self, handler, *args, **kwargs):
         self.handler = handler
@@ -50,19 +49,24 @@ class PropertyDispatcher(BaseDispatcher):
         return getattr(obj, self.property_name)
 
 
+class CreatedDispatcher(BaseDispatcher):
+    """
+    Calls registered handler if and only if an instance of the model is being created.
+    """
+
+    def _can_dispatch(self, obj, change, *args, **kwargs):
+        return not change
+
+
 class StateDispatcher(BaseDispatcher):
 
     """
     Use this class to register a handler for transition of a model to a certain state.
     """
     def _validate_init_params(self):
+        super(StateDispatcher, self)._validate_init_params()
         if self.field_value not in {value for value, _ in self.enum.choices}:
             raise ImproperlyConfigured('Enum of FieldDispatcher does not contain {}.'.format(self.field_value))
-        if not hasattr(self.handler, '__call__'):
-            raise ImproperlyConfigured('Handler of FieldDispatcher must be callable.')
-        if (len(inspect.getargspec(self.handler).args) != 1 or  # pylint: disable=W1505
-                inspect.getargspec(self.handler).keywords):  # pylint: disable=W1505
-            raise ImproperlyConfigured('Handler of FieldDispatcher must be a function of one parameter.')
 
     def __init__(self, handler, enum, field, field_value):
         self.enum = enum
@@ -71,5 +75,5 @@ class StateDispatcher(BaseDispatcher):
 
         super(StateDispatcher, self).__init__(handler, enum, field, field_value)
 
-    def _can_dispatch(self, obj, changed_fields, *args, **kwargs):
+    def _can_dispatch(self, obj, change, changed_fields, *args, **kwargs):
         return self.field.get_attname() in changed_fields and getattr(obj, self.field.get_attname()) == self.field_value
