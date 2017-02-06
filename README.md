@@ -34,7 +34,7 @@ Mixin for automatic South migration of custom model fields.
 #### `chamber.models.fields.RestrictedFileFieldMixin`
 
 Same as FileField, but you can specify:
-* `content_types` - list containing allowed content_types. Example: ['application/pdf', 'image/jpeg']
+* `allowed_content_types` - list containing allowed content_types. Example: ['application/pdf', 'image/jpeg']
 * `max_upload_size` - a number indicating the maximum file size allowed for upload in MB.
 Maximum upload size can be specified in project settings under `MAX_FILE_UPLOAD_SIZE` constant
 
