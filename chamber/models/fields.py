@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
 
-import magic  # pylint: disable=E0401
 import os
+from decimal import Decimal
 from uuid import uuid4 as uuid
+
+import magic  # pylint: disable=E0401
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -12,10 +14,11 @@ from django.db.models.fields import DecimalField as OriginDecimalField
 from django.forms import forms
 from django.template.defaultfilters import filesizeformat
 from django.utils.encoding import force_text
-from django.utils.translation import ugettext, ugettext_lazy
+from django.utils.translation import ugettext
 
 from chamber import config
-from chamber.forms.fields import DecimalField as DecimalFormField
+from chamber.forms import fields as chamber_fields
+from chamber.models.humanized_helpers import price_humanized
 from chamber.utils.datastructures import SequenceChoicesEnumMixin, SubstatesChoicesNumEnum
 
 
@@ -40,7 +43,7 @@ class DecimalField(OriginDecimalField):
 
     def formfield(self, **kwargs):
         defaults = {
-            'form_class': DecimalFormField,
+            'form_class': chamber_fields.DecimalField,
             'step': self.step,
             'min': self.min,
             'max': self.max,
@@ -204,3 +207,38 @@ class EnumSequencePositiveIntegerField(EnumSequenceFieldMixin, models.PositiveIn
 
 class EnumSequenceCharField(EnumSequenceFieldMixin, models.CharField):
     pass
+
+
+class PriceField(DecimalField):
+
+    def __init__(self, *args, **kwargs):
+        self.currency = kwargs.pop('currency', ugettext('CZK'))
+        default_kwargs = {
+            'decimal_places': 2,
+            'max_digits': 10,
+            'humanized': lambda val, inst, field: price_humanized(val, inst, currency=field.currency)
+        }
+        default_kwargs.update(kwargs)
+        super(PriceField, self).__init__(*args, **default_kwargs)
+
+    def formfield(self, **kwargs):
+        default_kwargs = {
+            'form_class': chamber_fields.PriceField,
+            'currency': self.currency,
+        }
+        default_kwargs.update(kwargs)
+
+        return super(PriceField, self).formfield(**default_kwargs)
+
+
+class PositivePriceField(PriceField):
+
+    def __init__(self, *args, **kwargs):
+        kwargs['validators'] = kwargs.get('validators', [])
+        kwargs['validators'].append(MinValueValidator(Decimal('0.00')))
+        super(PositivePriceField, self).__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(PositivePriceField, self).deconstruct()
+        del kwargs['validators']
+        return name, path, args, kwargs

@@ -2,18 +2,9 @@
 #################
 doc/
 
-# Virtualenv #
-##############
-ve/
-
 # Compiled source #
 ###################
 *.pyc
-
-# Cache #
-#########
-.sass-cache/
-CACHE/
 
 # IDE files #
 #############
@@ -39,17 +30,10 @@ CACHE/
 thumbs.db
 Thumbs.db
 
-# CoffeeScript & Closure #
-##########################
-node_modules/
-bower_components/
-var/
-dj/static/js/bower_components
-dj/static/js/goog
-dj/static/js/var
-dj/static/js/start.js
-dj/static/js/deps.js
-dj/static/js/app.js
+# Example project #
+###################
+example/var/
+example/media/
 
 # Coverage #
 ############

@@ -51,7 +51,12 @@ bootstrap: initvirtualenv pip
 reinstallvirtualenv: cleanvirtualenv bootstrap initvirtualenv initenv
 
 test: clean
-	$(PYTHON_BIN)/python $(LOCALPATH)/manage.py test $(test_modules)  --liveserver=localhost:$(DJANGO_TEST_PORTS) $(DJANGO_POSTFIX) -v 2
+	$(PYTHON_BIN)/coverage run --rcfile=$(LOCALPATH)/../.coveragerc $(LOCALPATH)/manage.py test $(test_modules)\
+	 --liveserver=localhost:$(DJANGO_TEST_PORTS) $(DJANGO_POSTFIX) -v 2 --noinput $(extra)
+
+htmlcoverage: test
+	$(PYTHON_BIN)/coverage html -d $(LOCALPATH)/var/reports/htmlcov --rcfile=$(LOCALPATH)/../.coveragerc
+	$(OPENHTML) $(LOCALPATH)/var/reports/htmlcov/index.html
 
 initdb:
 	mkdir -p $(LOCALPATH)/var/db
