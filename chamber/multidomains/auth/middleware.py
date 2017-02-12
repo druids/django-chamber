@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django.utils.functional import SimpleLazyObject
 
-from is_core import config as is_core_config  # pylint: disable=E0401
+from is_core.config import settings as is_core_settings  # pylint: disable=E0401
 from is_core.auth_token import utils  # pylint: disable=E0401
 from is_core.auth_token.middleware import TokenAuthenticationMiddlewares, get_user  # pylint: disable=E0401
 from is_core.auth_token.models import Token  # pylint: disable=E0401
@@ -18,7 +18,7 @@ def get_token(request):
     Returns the token model instance associated with the given request token key.
     If no user is retrieved AnonymousToken is returned.
     """
-    if (not request.META.get(header_name_to_django(is_core_config.IS_CORE_AUTH_HEADER_NAME)) and
+    if (not request.META.get(header_name_to_django(is_core_settings.AUTH_HEADER_NAME)) and
             config.CHAMBER_MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME):
         ovetaker_auth_token = request.COOKIES.get(config.CHAMBER_MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME)
         token = get_object_or_none(Token, key=ovetaker_auth_token, is_active=True)
