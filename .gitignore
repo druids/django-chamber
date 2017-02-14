@@ -1,6 +1,7 @@
 # Documentation #
 #################
 doc/
+.build
 
 # Compiled source #
 ###################
