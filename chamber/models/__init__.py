@@ -14,8 +14,7 @@ from django.utils.encoding import force_text
 from chamber.exceptions import PersistenceException
 from chamber.patch import Options
 
-from .fields import *  #  NOQA exposing classes and functions as a module API
-from .patch import *  # NOQA
+from .fields import *  # NOQA exposing classes and functions as a module API
 
 
 def many_to_many_field_to_dict(field, instance):
