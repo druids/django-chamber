@@ -99,12 +99,13 @@ class RestrictedFileFieldMixin(object):
         if allowed_content_types:
             self.validators.append(AllowedContentTypesFileValidator(allowed_content_types))
 
-    def get_filename(self, filename):
+    def generate_filename(self, instance, filename):
         """
         removes UTF chars from filename
         """
         from unidecode import unidecode
-        return super(RestrictedFileFieldMixin, self).get_filename(unidecode(force_text(filename)))
+
+        return super(RestrictedFileFieldMixin, self).generate_filename(instance, unidecode(force_text(filename)))
 
 
 class FileField(RestrictedFileFieldMixin, OriginFileField):
