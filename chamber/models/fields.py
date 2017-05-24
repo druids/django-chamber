@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import mimetypes
 import os
 from decimal import Decimal
 from uuid import uuid4 as uuid
@@ -75,13 +76,17 @@ class AllowedContentTypesFileValidator(object):
         self.content_types = content_types
 
     def __call__(self, data):
+        extension_mime_type = mimetypes.guess_type(data.file.name)[0]
+        mime_type = None
         with magic.Magic(flags=magic.MAGIC_MIME_TYPE) as m:
             mime_type = m.id_buffer(data.file.read(1024))
             data.file.seek(0)
-            if mime_type not in self.content_types:
-                raise ValidationError(
-                    ugettext('Unsupported file type')
-                )
+
+        if not {extension_mime_type, mime_type} <= set(self.content_types):
+            raise ValidationError(
+                ugettext('Unsupported file type')
+            )
+
         return data
 
 
