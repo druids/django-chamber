@@ -85,7 +85,7 @@ class TestFieldsModel(chamber_models.SmartModel):
     state_graph = chamber_models.EnumSequencePositiveIntegerField(verbose_name=_('graph'), null=True, blank=True,
                                                                   enum=GRAPH)
     file = chamber_models.FileField(verbose_name=_('file'), null=True, blank=True,
-                                    allowed_content_types=('application/pdf', 'text/plain'))
+                                    allowed_content_types=('application/pdf', 'text/plain', 'text/csv'))
     image = chamber_models.FileField(verbose_name=_('image'), null=True, blank=True, max_upload_size=1)
     price = chamber_models.PriceField(verbose_name=_('price'), null=True, blank=True, currency=_('EUR'))
     total_price = chamber_models.PositivePriceField(verbose_name=_('total price'), null=True, blank=True)
