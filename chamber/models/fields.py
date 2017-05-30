@@ -76,7 +76,7 @@ class AllowedContentTypesFileValidator(object):
         self.content_types = content_types
 
     def __call__(self, data):
-        extension_mime_type = mimetypes.guess_type(data.file.name)[0]
+        extension_mime_type = mimetypes.guess_type(data.name)[0]
         mime_type = None
         with magic.Magic(flags=magic.MAGIC_MIME_TYPE) as m:
             mime_type = m.id_buffer(data.file.read(1024))
