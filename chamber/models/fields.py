@@ -118,7 +118,10 @@ class FileField(RestrictedFileFieldMixin, OriginFileField):
 
 
 class ImageField(RestrictedFileFieldMixin, OriginImageField):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        allowed_content_types = kwargs.pop('allowed_content_types', config.CHAMBER_DEFAULT_IMAGE_ALLOWED_CONTENT_TYPES)
+        super(ImageField, self).__init__(allowed_content_types=allowed_content_types, *args, **kwargs)
 
 
 def generate_random_upload_path(instance, filename):
