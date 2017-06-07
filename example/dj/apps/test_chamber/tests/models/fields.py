@@ -119,6 +119,10 @@ class ModelFieldsTestCase(TransactionTestCase):
             assert_is_none(self.inst.image)
             assert_raises(PersistenceException, self.inst.image.save, 'image.jpeg', File(f))
 
+        # File has a wrong extension
+        with open('data/test2.jpg', 'rb') as f:
+            assert_raises(PersistenceException, self.inst.image.save, 'image.html', File(f))
+
     def test_should_validate_positive_price_field(self):
         assert_raises(PersistenceException, change_and_save, self.inst, total_price=-100)
 

@@ -7,3 +7,4 @@ pyprind==2.9.9
 coveralls==1.1
 filemagic==1.6
 unidecode==0.4.20
+pillow==4.1.1
