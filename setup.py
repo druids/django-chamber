@@ -12,6 +12,7 @@ setup(
     url="http://github.com/druids/django-chamber",
     packages=find_packages(),
     package_dir={"chamber": "chamber"},
+    include_package_data=True,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Environment :: Web Environment",
