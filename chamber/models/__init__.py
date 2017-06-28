@@ -238,6 +238,9 @@ class SmartModel(AuditModel):
     def _pre_save(self, *args, **kwargs):
         pass
 
+    def _call_pre_save(self, *args, **kwargs):
+        self._pre_save(*args, **kwargs)
+
     def _call_dispatcher_group(self, group_name, change, changed_fields, *args, **kwargs):
         if hasattr(self, group_name):
             for dispatcher in getattr(self, group_name):
@@ -255,23 +258,24 @@ class SmartModel(AuditModel):
         change = bool(self.pk)
         kwargs.update(self._get_save_extra_kwargs())
 
-        self._pre_save(change, self.changed_fields, *args, **kwargs)
-        self._call_dispatcher_group('pre_save_dispatchers', change, self.changed_fields, *args, **kwargs)
-
+        self._call_pre_save(change, self.changed_fields, *args, **kwargs)
         if is_cleaned_pre_save:
             self._clean_pre_save(*args, **kwargs)
+        self._call_dispatcher_group('pre_save_dispatchers', change, self.changed_fields, *args, **kwargs)
 
         super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                      update_fields=update_fields)
-        self._post_save(change, self.changed_fields, *args, **kwargs)
-        self._call_dispatcher_group('post_save_dispatchers', change, self.changed_fields, *args, **kwargs)
-
+        self._call_post_save(change, self.changed_fields, *args, **kwargs)
         if is_cleaned_post_save:
             self._clean_post_save(*args, **kwargs)
+        self._call_dispatcher_group('post_save_dispatchers', change, self.changed_fields, *args, **kwargs)
         self.post_save.send()
 
     def _post_save(self, *args, **kwargs):
         pass
+
+    def _call_post_save(self, *args, **kwargs):
+        self._post_save(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         if self._smart_meta.is_save_atomic:
