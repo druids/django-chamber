@@ -21,7 +21,10 @@ class AbstractEnum(object):
 class Enum(AbstractEnum):
 
     def __init__(self, *items):
-        self.container = OrderedDict(((item, item) for item in items))
+        self.container = OrderedDict((
+            item if isinstance(item, (list, tuple)) else (item, item)
+            for item in items
+        ))
         super(Enum, self).__init__()
 
     def _get_attr_val(self, name):
