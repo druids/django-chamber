@@ -197,7 +197,7 @@ class SmartModel(AuditModel):
                 try:
                     getattr(self, 'clean_{}'.format(field.name))()
                 except ValidationError as er:
-                    errors[field.name] = er.messages
+                    errors[field.name] = er
 
         if errors:
             raise ValidationError(errors)
