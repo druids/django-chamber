@@ -70,22 +70,31 @@ class RestrictedFileValidator(object):
             return data
 
 
-class AllowedContentTypesFileValidator(object):
+class AllowedContentTypesByFilenameFileValidator(object):
 
     def __init__(self, content_types):
         self.content_types = content_types
 
     def __call__(self, data):
         extension_mime_type = mimetypes.guess_type(data.name)[0]
-        mime_type = None
+
+        if extension_mime_type not in self.content_types:
+            raise ValidationError(ugettext('Extension of file name is not allowed'))
+
+        return data
+
+
+class AllowedContentTypesByContentFileValidator(object):
+
+    def __init__(self, content_types):
+        self.content_types = content_types
+
+    def __call__(self, data):
         with magic.Magic(flags=magic.MAGIC_MIME_TYPE) as m:
             mime_type = m.id_buffer(data.file.read(1024))
             data.file.seek(0)
-
-        if not {extension_mime_type, mime_type} <= set(self.content_types):
-            raise ValidationError(
-                ugettext('Unsupported file type')
-            )
+            if mime_type not in self.content_types:
+                raise ValidationError(ugettext('File content was evaluated as not supported file type'))
 
         return data
 
@@ -102,7 +111,10 @@ class RestrictedFileFieldMixin(object):
         super(RestrictedFileFieldMixin, self).__init__(*args, **kwargs)
         self.validators.append(RestrictedFileValidator(max_upload_size))
         if allowed_content_types:
-            self.validators.append(AllowedContentTypesFileValidator(allowed_content_types))
+            self.validators = tuple(self.validators) + (
+                AllowedContentTypesByFilenameFileValidator(allowed_content_types),
+                AllowedContentTypesByContentFileValidator(allowed_content_types),
+            )
 
     def generate_filename(self, instance, filename):
         """
