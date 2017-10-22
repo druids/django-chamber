@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-02-02 20:19+0100\n"
+"POT-Creation-Date: 2017-10-13 15:43+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,6 +18,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
 
+#: forms/fields.py:37 models/fields.py:236
+#: models/humanized_helpers/__init__.py:10
+msgid "CZK"
+msgstr "Kč"
+
 #: models/__init__.py:148
 msgid "created at"
 msgstr "vytvořeno"
@@ -26,20 +31,28 @@ msgstr "vytvořeno"
 msgid "changed at"
 msgstr "upraveno"
 
-#: models/fields.py:69
+#: models/fields.py:64
 #, python-brace-format
 msgid "Please keep filesize under {max}. Current filesize {current}"
 msgstr ""
 "Udržujte velikost souboru pod {max}. Současná velikost souboru je {current}"
 
-#: models/fields.py:89
-msgid "Unsupported file type"
-msgstr "Nepodporovaný typ souboru"
+#: models/fields.py:82
+msgid "Extension of file name is not allowed"
+msgstr "Přípona souboru není povolena"
 
-#: models/fields.py:171
+#: models/fields.py:97
+msgid "File content was evaluated as not supported file type"
+msgstr "Obsah souboru byl vyhodnocen jako nepovolený"
+
+#: models/fields.py:186
 msgid "Value must be empty"
 msgstr "Hodnota musí být prázdná"
 
-#: models/fields.py:176 models/fields.py:206
+#: models/fields.py:191 models/fields.py:221
 msgid "Allowed choices are {}."
 msgstr "Povolené možnosti jsou {}."
+
+#: models/humanized_helpers/__init__.py:11
+msgid "(None)"
+msgstr "---"
