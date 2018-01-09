@@ -20,13 +20,11 @@ dispatchers is invoked with following parameters:
 1. ``obj`` instance of the model that is being saved
 2. ``changed_fields`` list of field names that was changed since the
    last save
-3. ``*args`` custom arguments passed to the save method (can be used
-   to pass additional arguments to your custom dispatchers)
-4. ``**kwargs`` custom keyword arguments passed to the save method
+3. ``**kwargs`` custom keyword arguments passed to the save method
 
 The moment when the handler should be fired may be important.
-Therefore, you can register the dispatcher either in the ``pre_save_dispatchers``
-group or ``post_save_dispatchers`` group.
+Therefore, you can select signal that defines when dispatcher will be infoked. There is two signals:
+``chamber.models.signals.dispatcher_pre_save`` or ``chamber.models.signals.dispatcher_post_save``
 Both groups are dispatched immediately after the ``_pre_save`` or ``_post_save``
 method respectively.
 
@@ -40,7 +38,7 @@ When the handler is fired, it is passed a single argument -- the instance of the
 
 .. class:: chamber.models.dispatchers.PropertyDispatcher
 
-``chamber.models.dispatchers.PropertyDispatcher`` is a versatile
+``PropertyDispatcher`` is a versatile
 dispatcher that fires the given handler when a specified property of the
 model evaluates to ``True``.
 
@@ -54,8 +52,8 @@ handler to be dispatched after saving the object if the property
 
         email_sent = models.BooleanField()
 
-        post_save_dispatchers = (
-            PropertyDispatcher(send_email, 'should_send_email'),
+        dispatchers = (
+            PropertyDispatcher(send_email, 'should_send_email', dispatcher_post_save),
         )
 
         @property
@@ -77,13 +75,12 @@ be dispatched during the ``_pre_save`` method when the state changes to
 
     class MySmartModel(chamber\_models.SmartModel):
 
-
         STATE = ChoicesNumEnum(
             ('FIRST', _('first'), 1),
             ('SECOND', _('second'), 2),
         )
         state = models.IntegerField(choices=STATE.choices, default=STATE.FIRST)
 
-        pre_save_dispatchers = (
-            StateDispatcher(my_handler, STATE, state, STATE.SECOND),
+        dispatchers = (
+            StateDispatcher(my_handler, STATE, state, STATE.SECOND, signal=dispatcher_pre_save),
         )

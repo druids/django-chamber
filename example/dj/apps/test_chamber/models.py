@@ -7,6 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 from chamber import models as chamber_models
 from chamber.models import fields as chamber_fields
 from chamber.models.dispatchers import CreatedDispatcher, PropertyDispatcher, StateDispatcher
+from chamber.models.signals import dispatcher_pre_save, dispatcher_post_save
 from chamber.utils.datastructures import ChoicesNumEnum, SequenceChoicesNumEnum, SubstatesChoicesNumEnum
 
 from .handlers import (create_test_dispatchers_model_handler, create_test_fields_model_handler,
@@ -99,14 +100,11 @@ class TestDispatchersModel(chamber_models.SmartModel):
     )
     state = models.IntegerField(null=True, blank=False, choices=STATE.choices, default=STATE.FIRST)
 
-    pre_save_dispatchers = (
-        CreatedDispatcher(create_csv_record_handler, STATE, state, STATE.SECOND),
-        StateDispatcher(create_test_smart_model_handler, STATE, state, STATE.SECOND),
-    )
-
-    post_save_dispatchers = (
-        PropertyDispatcher(create_test_fields_model_handler, 'always_dispatch'),
-        PropertyDispatcher(create_test_dispatchers_model_handler, 'never_dispatch'),
+    dispatchers = (
+        CreatedDispatcher(create_csv_record_handler, signal=dispatcher_pre_save),
+        StateDispatcher(create_test_smart_model_handler, STATE, state, STATE.SECOND, signal=dispatcher_pre_save),
+        PropertyDispatcher(create_test_fields_model_handler, 'always_dispatch', signal=dispatcher_post_save),
+        PropertyDispatcher(create_test_dispatchers_model_handler, 'never_dispatch', signal=dispatcher_post_save),
     )
 
     @property
