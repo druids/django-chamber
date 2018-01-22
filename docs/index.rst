@@ -72,5 +72,6 @@ Content
    forms
    models
    dispatchers
+   transactions
    utils
    shortcuts

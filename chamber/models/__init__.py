@@ -1,20 +1,27 @@
 from __future__ import unicode_literals
 
+import copy
+
 import collections
 
 from itertools import chain
+
+import six
 
 from six import python_2_unicode_compatible
 
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import force_text
 
 from chamber.exceptions import PersistenceException
 from chamber.patch import Options
+from chamber.shortcuts import change_and_save, change, bulk_change_and_save
 
 from .fields import *  # NOQA exposing classes and functions as a module API
+from .signals import dispatcher_post_save, dispatcher_pre_save
 
 
 def many_to_many_field_to_dict(field, instance):
@@ -60,18 +67,25 @@ ValueChange = collections.namedtuple('ValueChange', ('initial', 'current'))
 
 @python_2_unicode_compatible
 class ChangedFields(object):
+    """
+    Class stores changed fields and its initial and current values.
+    """
 
-    def __init__(self, instance):
-        self.instance = instance
-        self.initial_values = self.get_instance_dict(instance)
+    def __init__(self, initial_dict):
+        self._initial_dict = initial_dict
 
-    def get_instance_dict(self, instance):
-        return model_to_dict(instance, fields=(field.name for field in instance._meta.fields))
+    @property
+    def initial_values(self):
+        return self._initial_dict
+
+    @property
+    def current_values(self):
+        raise NotImplementedError
 
     @property
     def diff(self):
         d1 = self.initial_values
-        d2 = self.get_instance_dict(self.instance)
+        d2 = self.current_values
         return {k: ValueChange(v, d2[k]) for k, v in d1.items() if v != d2[k]}
 
     def __setitem__(self, key, item):
@@ -126,6 +140,40 @@ class ChangedFields(object):
         return repr(self.diff)
 
 
+class DynamicChangedFields(ChangedFields):
+    """
+    Dynamic changed fields are changed with the instance changes.
+    """
+
+    def __init__(self, instance):
+        super(DynamicChangedFields, self).__init__(self._get_instance_dict(instance))
+        self.instance = instance
+
+    def _get_instance_dict(self, instance):
+        return model_to_dict(instance, fields=(field.name for field in instance._meta.fields))
+
+    @property
+    def current_values(self):
+        return self._get_instance_dict(self.instance)
+
+    def get_static_changes(self):
+        return StaticChangedFields(self.initial_values, self.current_values)
+
+
+class StaticChangedFields(ChangedFields):
+    """
+    Static changed fields are immutable. The origin instance changes will not have an affect.
+    """
+
+    def __init__(self, initial_dict, current_dict):
+        super(StaticChangedFields, self).__init__(initial_dict)
+        self._current_dict = current_dict
+
+    @property
+    def current_values(self):
+        return self._current_dict
+
+
 class ComparableModelMixin(object):
 
     def equals(self, obj, comparator):
@@ -145,6 +193,7 @@ class Comparator(object):
 
 
 class AuditModel(models.Model):
+
     created_at = models.DateTimeField(verbose_name=_('created at'), null=False, blank=False, auto_now_add=True,
                                       db_index=True)
     changed_at = models.DateTimeField(verbose_name=_('changed at'), null=False, blank=False, auto_now=True,
@@ -170,16 +219,44 @@ class Signal(object):
 class SmartQuerySet(models.QuerySet):
 
     def fast_distinct(self):
+        """
+        Because standard distinct used on the all fields are very slow and works only with PostgreSQL database
+        this method provides alternative to the standard distinct method.
+        :return: qs with unique objects
+        """
         return self.model.objects.filter(pk__in=self.values_list('pk', flat=True))
 
+    def change_and_save(self, **chaned_fields):
+        """
+        Changes a given `changed_fields` on each object in the queryset, saves objects
+        and returns the changed objects in the queryset.
+        """
+        bulk_change_and_save(self, **chaned_fields)
+        return self.filter()
 
-class SmartModel(AuditModel):
+
+class SmartModelBase(ModelBase):
+    """
+    Smart model meta class that register dispatchers to the post or pre save signals.
+    """
+
+    def __new__(cls, name, bases, attrs):
+
+        new_cls = super(SmartModelBase, cls).__new__(cls, name, bases, attrs)
+        for dispatcher in new_cls.dispatchers:
+            dispatcher.connect(new_cls)
+        return new_cls
+
+
+class SmartModel(six.with_metaclass(SmartModelBase, AuditModel)):
 
     objects = SmartQuerySet.as_manager()
 
+    dispatchers = []
+
     def __init__(self, *args, **kwargs):
         super(SmartModel, self).__init__(*args, **kwargs)
-        self.changed_fields = ChangedFields(self)
+        self.changed_fields = DynamicChangedFields(self)
         self.post_save = Signal(self)
 
     @property
@@ -241,13 +318,9 @@ class SmartModel(AuditModel):
     def _call_pre_save(self, *args, **kwargs):
         self._pre_save(*args, **kwargs)
 
-    def _call_dispatcher_group(self, group_name, change, changed_fields, *args, **kwargs):
-        if hasattr(self, group_name):
-            for dispatcher in getattr(self, group_name):
-                dispatcher(self, change, changed_fields, *args, **kwargs)
-
     def _save(self, is_cleaned_pre_save=None, is_cleaned_post_save=None, force_insert=False, force_update=False,
               using=None, update_fields=None, *args, **kwargs):
+
         is_cleaned_pre_save = (
             self._smart_meta.is_cleaned_pre_save if is_cleaned_pre_save is None else is_cleaned_pre_save
         )
@@ -255,20 +328,25 @@ class SmartModel(AuditModel):
             self._smart_meta.is_cleaned_post_save if is_cleaned_post_save is None else is_cleaned_post_save
         )
 
+        origin = self.__class__
+
         change = bool(self.pk)
         kwargs.update(self._get_save_extra_kwargs())
 
         self._call_pre_save(change, self.changed_fields, *args, **kwargs)
         if is_cleaned_pre_save:
             self._clean_pre_save(*args, **kwargs)
-        self._call_dispatcher_group('pre_save_dispatchers', change, self.changed_fields, *args, **kwargs)
-
+        dispatcher_pre_save.send(sender=origin, instance=self, change=change,
+                                 changed_fields=self.changed_fields.get_static_changes(),
+                                 *args, **kwargs)
         super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                      update_fields=update_fields)
         self._call_post_save(change, self.changed_fields, *args, **kwargs)
         if is_cleaned_post_save:
             self._clean_post_save(*args, **kwargs)
-        self._call_dispatcher_group('post_save_dispatchers', change, self.changed_fields, *args, **kwargs)
+        dispatcher_post_save.send(sender=origin, instance=self, change=change,
+                                  changed_fields=self.changed_fields.get_static_changes(),
+                                  *args, **kwargs)
         self.post_save.send()
 
     def _post_save(self, *args, **kwargs):
@@ -283,7 +361,7 @@ class SmartModel(AuditModel):
                 self._save(*args, **kwargs)
         else:
             self._save(*args, **kwargs)
-        self.changed_fields = ChangedFields(self)
+        self.changed_fields = DynamicChangedFields(self)
 
     def _pre_delete(self, *args, **kwargs):
         pass
@@ -317,6 +395,28 @@ class SmartModel(AuditModel):
                 self._delete(*args, **kwargs)
         else:
             self._delete(*args, **kwargs)
+
+    def refresh_from_db(self, *args, **kwargs):
+        super().refresh_from_db(*args, **kwargs)
+        return self
+
+    def change(self, **changed_fields):
+        """
+        Changes a given `changed_fields` on this object and returns itself.
+        :param changed_fields: fields to change
+        :return: self
+        """
+        change(self, **changed_fields)
+        return self
+
+    def change_and_save(self, **changed_fields):
+        """
+        Changes a given `changed_fields` on this object, saves it and returns itself.
+        :param changed_fields: fields to change
+        :return: self
+        """
+        change_and_save(self, **changed_fields)
+        return self
 
     class Meta:
         abstract = True

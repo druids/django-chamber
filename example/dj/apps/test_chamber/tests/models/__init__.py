@@ -7,7 +7,7 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 
 from chamber.exceptions import PersistenceException
-from chamber.models import ChangedFields, Comparator
+from chamber.models import DynamicChangedFields, Comparator
 
 from germanium.tools import assert_equal, assert_false, assert_raises, assert_true  # pylint: disable=E0401
 
@@ -70,17 +70,20 @@ class ModelsTestCase(TransactionTestCase):
 
     def test_smart_model_changed_fields(self):
         obj = TestProxySmartModel.objects.create(name='a')
-        changed_fields = ChangedFields(obj)
+        changed_fields = DynamicChangedFields(obj)
         assert_equal(len(changed_fields), 0)
         obj.name = 'b'
         assert_equal(len(changed_fields), 1)
         assert_equal(changed_fields['name'].initial, 'a')
         assert_equal(changed_fields['name'].current, 'b')
+        static_changed_fields = changed_fields.get_static_changes()
         obj.save()
 
         # Initial values is not changed
         assert_equal(len(changed_fields), 2)
+        assert_equal(len(static_changed_fields), 1)
         assert_equal(set(changed_fields.keys()), {'name', 'changed_at'})
+        assert_equal(set(static_changed_fields.keys()), {'name'})
         assert_equal(changed_fields['name'].initial, 'a')
         assert_equal(changed_fields['name'].current, 'b')
 
@@ -90,6 +93,8 @@ class ModelsTestCase(TransactionTestCase):
         assert_raises(AttributeError, changed_fields.__delitem__, 'name')
         assert_raises(AttributeError, changed_fields.clear)
         assert_raises(AttributeError, changed_fields.pop, 'name')
+
+        obj.name = 'b'
 
     def test_model_diff(self):
         obj = DiffModel.objects.create(name='test', datetime=timezone.now(), number=2)

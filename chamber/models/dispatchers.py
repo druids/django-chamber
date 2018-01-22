@@ -1,6 +1,14 @@
 from __future__ import unicode_literals
 
+from collections import defaultdict
+
 from django.core.exceptions import ImproperlyConfigured
+
+from chamber.utils.transaction import (
+    on_success, OnSuccessHandler, OneTimeOnSuccessHandler, InstanceOneTimeOnSuccessHandler
+)
+
+from .signals import dispatcher_post_save
 
 
 class BaseDispatcher(object):
@@ -8,24 +16,32 @@ class BaseDispatcher(object):
     Base dispatcher class that can be subclassed to call a handler based on a change in some a SmartModel.
     If you subclass, be sure the __call__ method does not change signature.
     """
+
+    signal = None
+
     def _validate_init_params(self):
         if not callable(self.handler):
             raise ImproperlyConfigured('Registered handler must be a callable.')
 
-    def __init__(self, handler, *args, **kwargs):
+    def __init__(self, handler, signal=None):
         self.handler = handler
         self._validate_init_params()
+        self._connected = defaultdict(list)
+        self._signal = signal if signal is not None else self.signal
 
-    def __call__(self, obj, *args, **kwargs):
+    def connect(self, sender):
+        self._signal.connect(self, sender=sender)
+
+    def __call__(self, instance, **kwargs):
         """
-        `obj` ... instance of the SmartModel where the handler is being called
+        `instance` ... instance of the SmartModel where the handler is being called
         Some dispatchers require additional params to evaluate the handler can be dispatched,
         these are hidden in args and kwargs.
         """
-        if self._can_dispatch(obj, *args, **kwargs):
-            self.handler(obj)
+        if self._can_dispatch(instance, **kwargs):
+            self.handler(instance=instance, **kwargs)
 
-    def _can_dispatch(self, obj, *args, **kwargs):
+    def _can_dispatch(self, instance, *args, **kwargs):
         raise NotImplementedError
 
 
@@ -41,12 +57,12 @@ class PropertyDispatcher(BaseDispatcher):
         """
         pass
 
-    def __init__(self, handler, property_name):
+    def __init__(self, handler, property_name, signal=None):
         self.property_name = property_name
-        super(PropertyDispatcher, self).__init__(handler, property_name)
+        super(PropertyDispatcher, self).__init__(handler, signal)
 
-    def _can_dispatch(self, obj, *args, **kwargs):
-        return getattr(obj, self.property_name)
+    def _can_dispatch(self, instance, **kwargs):
+        return getattr(instance, self.property_name)
 
 
 class CreatedDispatcher(BaseDispatcher):
@@ -54,26 +70,29 @@ class CreatedDispatcher(BaseDispatcher):
     Calls registered handler if and only if an instance of the model is being created.
     """
 
-    def _can_dispatch(self, obj, change, *args, **kwargs):
+    def _can_dispatch(self, instance, change, **kwargs):
         return not change
 
 
 class StateDispatcher(BaseDispatcher):
-
     """
     Use this class to register a handler for transition of a model to a certain state.
     """
+
     def _validate_init_params(self):
         super(StateDispatcher, self)._validate_init_params()
         if self.field_value not in {value for value, _ in self.enum.choices}:
             raise ImproperlyConfigured('Enum of FieldDispatcher does not contain {}.'.format(self.field_value))
 
-    def __init__(self, handler, enum, field, field_value):
+    def __init__(self, handler, enum, field, field_value, signal=None):
         self.enum = enum
         self.field = field
         self.field_value = field_value
 
-        super(StateDispatcher, self).__init__(handler, enum, field, field_value)
+        super(StateDispatcher, self).__init__(handler, signal=signal)
 
-    def _can_dispatch(self, obj, change, changed_fields, *args, **kwargs):
-        return self.field.get_attname() in changed_fields and getattr(obj, self.field.get_attname()) == self.field_value
+    def _can_dispatch(self, instance, change, changed_fields, *args, **kwargs):
+        return (
+            self.field.get_attname() in changed_fields and
+            getattr(instance, self.field.get_attname()) == self.field_value
+        )

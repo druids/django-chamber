@@ -10,6 +10,7 @@ Utility Functions
     remove_accent('ěščřžýáíé') # 'escrzyaie'
 
 .. function:: chamber.utils.get_class_method(cls_or_inst, method_name)
+
 Returns a method of a given class or instance.
 
 
@@ -29,12 +30,15 @@ Enums
 -----
 
 .. class:: chamber.utils.datastructures.AbstractEnum
+
 Base enumeration class with controlled ``__getattr__``.
 
 .. class:: chamber.utils.datastructures.Enum
+
 Python's ``set`` with ``AbstractEnum`` behaviour.
 
 .. class:: chamber.utils.datastructures.NumEnum
+
 Python's ``dict`` with ``AbstractEnum`` behaviour.
 
 ::
@@ -43,9 +47,11 @@ Python's ``dict`` with ``AbstractEnum`` behaviour.
     {'a': 1, 'b': 2}
 
 .. class:: chamber.utils.datastructures.AbstractChoicesEnum
+
 Base choices class (can be used as a model field's ``choices`` argument).
 
 .. class:: chamber.utils.datastructures.ChoicesEnum
+
 ``django.utils.datastructures.SortedDict`` with ``AbstractEnum`` and
 ``AbstractChoicesEnum`` behaviour. Useful for string based choices.
 
@@ -78,6 +84,7 @@ Decorators
 ----------
 
 .. decorator:: chamber.utils.decorators.classproperty
+
 Decorator that turns a class method into a property of the class.
 
 ::

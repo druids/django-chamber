@@ -72,6 +72,106 @@ The ``django.db.models.FileField`` with ``RestrictedFileFieldMixin`` options.
 
 Mixin for automatic South migration of custom model fields.
 
+SmartModel
+----------
+
+``chamber.models.SmartModel`` improved django Model class with several features that simplify development of complex applications
+
+.. class:: chamber.models.SmartModel
+
+    .. attribute:: created_at
+
+        Because our experience has shown us that datetime of creation is very useful this field ``django.models.DateTimeField`` with ``auto_add_no`` set to ``True`` is added to every model that inherits from ``SmartModel``
+
+    .. attribute:: changed_at
+
+        This model field is same case as ``created_at`` with the difference that there is used ``auto_now=True`` therefore every date and time of change is stored here.
+
+    .. attribute:: dispatchers
+
+        List of defined pre or post save dispatchers. More obout it will find _dispatchers
+
+    .. property:: has_changed
+
+        Returns ``True`` or ``False`` depending on whether instance was changed
+
+    .. property:: initial_values
+
+        Returns initial values of the object from loading instance from database. It should represent actual state of the object in the database
+
+    .. method:: clean_<field_name>()
+
+        Like a django form field you can use your own method named by field name for cleaning input value. You can too raise ``ValidationError`` if input value is invalid
+
+    .. method:: _pre_save()
+
+        Method that is called before saving instance. You can here change instance structure or call some operations before saving object
+
+    .. method:: _post_save()
+
+        Method that is called after saving instance. You can here change instance structure or call some operations after saving object
+
+    .. method:: _pre_delete()
+
+        Method that is called before removing instance. You can here change instance structure or call some operations before removing object
+
+    .. method:: _post_delete()
+
+        Method that is called after removing instance. You can here change instance structure or call some operations after removing object
+
+    .. method:: refresh_from_db()
+
+        There is used implementation from django ``refresh_from_db`` method with small change that method returns refreshed instance
+
+    .. method:: change(**changed_fields)
+
+        Update instance field values with values send in ``changed_fields``
+
+    .. method:: change_and_save(**changed_fields)
+
+        Update instance field values with values send in ``changed_fields`` and finally instance is saved
+
+
+SmartMeta
+---------
+
+SmartMeta similar like django meta is defined inside ``SmartModel`` and is accessible via ``_smart_meta`` attribute. Its purpose is define default ``SmartModel`` behavior.
+
+.. class:: SmartMeta
+
+    .. attribute:: is_cleaned_pre_save
+
+        Defines if ``SmartModel`` will be automatically validated before saving. Default value is ``True``
+
+    .. attribute:: is_cleaned_pre_save
+
+        Defines if ``SmartModel`` will be automatically validated after saving. Default value is ``False``
+
+    .. attribute:: is_cleaned_pre_delete
+
+        Defines if ``SmartModel`` will be automatically validated before removing. Default value is ``False``
+
+    .. attribute:: is_cleaned_pre_delete
+
+        Defines if ``SmartModel`` will be automatically validated after removing. Default value is ``False``
+
+    .. attribute:: is_save_atomic
+
+        Defines if ``SmartModel`` will be saved in transaction atomic block ``False``
+
+    .. attribute:: is_delete_atomic
+
+        Defines if ``SmartModel`` will be removed in transaction atomic block ``False``
+
+.. code:: python
+
+    class SmartModelWithMeta(SmartModel):
+
+        class SmartMeta:
+            is_cleaned_pre_save = True
+            is_cleaned_pre_delete = True
+
+
 SmartQuerySet
 -------------
 
@@ -98,3 +198,11 @@ will assume the custom filters to be there).
         .. code:: python
 
             MyModel.objects.filter(pk__in=qs.values_list('pk', flat=True))
+
+    .. method:: change_and_save(**changed_fields)
+
+        Change selected fields on the selected queryset and saves it, finnaly is returned changed objects in the queryset. Difference from update is that there is called save method on the instance, but it is slower.
+
+
+
+
