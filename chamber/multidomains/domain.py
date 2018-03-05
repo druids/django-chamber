@@ -1,9 +1,7 @@
-from __future__ import unicode_literals
-
 from django.core.exceptions import ImproperlyConfigured
 
 
-class Domain(object):
+class Domain:
 
     def __init__(self, name, protocol, hostname, urlconf, user_model, port=None):
         self.name = name

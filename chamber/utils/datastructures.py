@@ -1,10 +1,8 @@
-from __future__ import unicode_literals
-
 from collections import MutableSet, OrderedDict
 from itertools import chain
 
 
-class AbstractEnum(object):
+class AbstractEnum:
 
     def _has_attr(self, name):
         return name in self.container
@@ -57,7 +55,7 @@ class NumEnum(AbstractEnum):
         return self.container[name]
 
 
-class AbstractChoicesEnum(object):
+class AbstractChoicesEnum:
 
     def _get_labels_dict(self):
         return dict(self._get_choices())
@@ -157,7 +155,7 @@ class SubstatesChoicesNumEnum(ChoicesNumEnum):
         return self.categories.get(category, ())
 
 
-class SequenceChoicesEnumMixin(object):
+class SequenceChoicesEnumMixin:
 
     def __init__(self, items, initial_states=None):
         assert len(items) > 0

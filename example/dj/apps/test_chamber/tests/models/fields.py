@@ -31,10 +31,10 @@ class ModelFieldsTestCase(TransactionTestCase):
     def test_decimal_field(self):
         change_and_save(self.inst, decimal=3)
         assert_equal(self.inst.decimal, 3)
-        assert_raises(PersistenceException, change_and_save, self.inst, decimal=2.99)
-        assert_raises(PersistenceException, change_and_save, self.inst, decimal=10.00001)
+        assert_raises(PersistenceException, change_and_save, self.inst, decimal='2.99')
+        assert_raises(PersistenceException, change_and_save, self.inst, decimal='10.00001')
         try:
-            change_and_save(self.inst, decimal=11.1)
+            change_and_save(self.inst, decimal='11.1')
             assert_true(False, 'Previous `change_and_save` suppose to raise an exception')
         except PersistenceException as ex:
             assert_true('decimal: ' in str(ex), 'Exception message was supposed to contain a field name.')
@@ -54,12 +54,12 @@ class ModelFieldsTestCase(TransactionTestCase):
     def test_subchoices_field_value_should_be_empty(self):
         self.inst.state = 4  # setting an invalid value
         try:
-            TestFieldsModel._meta.get_field_by_name('state_reason')[0].validate(  # pylint: disable=W0212
+            TestFieldsModel._meta.get_field('state_reason').validate(  # pylint: disable=W0212
                 TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst)  # pylint: disable=W0212
             assert_true(False, 'Field validation should raise an error')
         except ValidationError as ex:
             assert_equal(['Value must be empty'], ex.messages)
-        assert_is_none(TestFieldsModel._meta.get_field_by_name('state_reason')[0].clean(  # pylint: disable=W0212
+        assert_is_none(TestFieldsModel._meta.get_field('state_reason').clean(  # pylint: disable=W0212
             TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst))  # pylint: disable=W0212
 
     def test_prev_value_field(self):
@@ -127,14 +127,14 @@ class ModelFieldsTestCase(TransactionTestCase):
         assert_raises(PersistenceException, change_and_save, self.inst, total_price=-100)
 
     def test_should_check_price_form_field(self):
-        field = TestFieldsModel._meta.get_field_by_name('price')[0]  # pylint: disable=W0212
+        field = TestFieldsModel._meta.get_field('price')  # pylint: disable=W0212
         assert_equal(ugettext_lazy('EUR'), field.currency)
         form_field = field.formfield()
         assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))
         assert_equal(field.currency, form_field.widget.placeholder)
 
     def test_should_check_total_price_form_field(self):
-        field = TestFieldsModel._meta.get_field_by_name('total_price')[0]  # pylint: disable=W0212
+        field = TestFieldsModel._meta.get_field('total_price')  # pylint: disable=W0212
         assert_equal(ugettext_lazy('CZK'), field.currency)
         form_field = field.formfield()
         assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))
@@ -146,7 +146,7 @@ class ModelFieldsTestCase(TransactionTestCase):
 
     @data_provider(model_fields)
     def test_should_assert_form_field(self, field_name, currency, kwargs_to_remove):
-        field = TestFieldsModel._meta.get_field_by_name(field_name)[0]  # pylint: disable=W0212
+        field = TestFieldsModel._meta.get_field(field_name)  # pylint: disable=W0212
         assert_equal(currency, field.currency)
         form_field = field.formfield()
         assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))

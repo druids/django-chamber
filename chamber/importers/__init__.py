@@ -1,10 +1,6 @@
-from __future__ import unicode_literals
-
 import csv
 import io
 import os
-
-import six
 
 from django.conf import settings
 
@@ -26,13 +22,13 @@ def simple_count(filename, encoding):
     return lines
 
 
-class DummyOutputStream(six.StringIO, object):
+class DummyOutputStream(io.StringIO):
 
     def write(self, *args, **kwargs):
         super(DummyOutputStream, self).write(*args)
 
 
-class AbstractCSVImporter(object):
+class AbstractCSVImporter:
     """
     Abstract CSV importer provides an easy way to implement loading a CSV file into a Django model.
         * To alter or validate field value, define clean_field_name() method in a similar manner as in Django forms.
@@ -89,7 +85,7 @@ class AbstractCSVImporter(object):
         return self.skip_header
 
     def get_fields(self):
-        return tuple(f if isinstance(f, six.text_type) else six.u(f) for f in self.fields)
+        return self.fields
 
     def get_fields_dict(self, row):
         """
@@ -97,7 +93,7 @@ class AbstractCSVImporter(object):
         Beware, it aligns the lists of fields and row values with Nones to allow for adding fields not found in the CSV.
         Whitespace around the value of the cell is stripped.
         """
-        return {k: getattr(self, 'clean_{}'.format(k), lambda x: x)(v.strip() if isinstance(v, six.string_types)
+        return {k: getattr(self, 'clean_{}'.format(k), lambda x: x)(v.strip() if isinstance(v, str)
                                                                     else None)
                 for k, v in zip_longest(self.get_fields(), row)}
 

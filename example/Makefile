@@ -9,12 +9,11 @@ DJANGO_DIR = dj
 VIRTUAL_ENV = var/ve
 LOCALPATH = $(CURDIR)
 PYTHONPATH = $(LOCALPATH)/$(DJANGO_DIR)
-DJANGO_TEST_PORTS = 9000-10000
 SETTINGS = settings
 DJANGO_SETTINGS_MODULE = $(DJANGO_DIR).settings.$(SETTINGS)
 DJANGO_POSTFIX = --settings=$(DJANGO_SETTINGS_MODULE) --pythonpath=$(PYTHONPATH)
 PYTHON_BIN = $(VIRTUAL_ENV)/bin
-PYTHON = python2.7
+PYTHON = python3.6
 PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
 PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL}).$(word 2,${PYTHON_VERSION_FULL})
 TYPE = dev
@@ -52,7 +51,7 @@ reinstallvirtualenv: cleanvirtualenv bootstrap initvirtualenv initenv
 
 test: clean
 	$(PYTHON_BIN)/coverage run --rcfile=$(LOCALPATH)/../.coveragerc $(LOCALPATH)/manage.py test $(test_modules)\
-	 --liveserver=localhost:$(DJANGO_TEST_PORTS) $(DJANGO_POSTFIX) -v 2 --noinput $(extra)
+	 $(DJANGO_POSTFIX) -v 2 --noinput $(extra)
 
 htmlcoverage: test
 	$(PYTHON_BIN)/coverage html -d $(LOCALPATH)/var/reports/htmlcov --rcfile=$(LOCALPATH)/../.coveragerc
@@ -62,7 +61,7 @@ initdb:
 	mkdir -p $(LOCALPATH)/var/db
 
 syncdb:
-	$(PYTHON_BIN)/python manage.py syncdb --noinput $(DJANGO_POSTFIX)
+	$(PYTHON_BIN)/python manage.py migrate --run-syncdb --noinput $(DJANGO_POSTFIX)
 
 initdata: syncmedia
 	if [ -a $(LOCALPATH)/$(INIT_DATA_FILE) ]; then $(PYTHON_BIN)/python manage.py loaddata $(LOCALPATH)/$(INIT_DATA_FILE) $(DJANGO_POSTFIX); fi;

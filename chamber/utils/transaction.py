@@ -23,7 +23,7 @@ def atomic(func):
         return transaction.atomic(func)
 
 
-class TransactionSignalsContext(object):
+class TransactionSignalsContext:
     """
     Context object that stores handlers and call it after successful pass trough surrounded code block
     with "transaction_signals decorator. Handlers can be unique or standard. Unique handlers are registered
@@ -125,7 +125,7 @@ def atomic_with_signals(func):
         return transaction.atomic(transaction_signals(func))
 
 
-class OnSuccessHandler(object):
+class OnSuccessHandler:
     """
     Handler class that is used for performing on success operations.
     """

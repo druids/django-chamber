@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from collections import defaultdict
 
 from django.core.exceptions import ImproperlyConfigured
@@ -11,7 +9,7 @@ from chamber.utils.transaction import (
 from .signals import dispatcher_post_save
 
 
-class BaseDispatcher(object):
+class BaseDispatcher:
     """
     Base dispatcher class that can be subclassed to call a handler based on a change in some a SmartModel.
     If you subclass, be sure the __call__ method does not change signature.

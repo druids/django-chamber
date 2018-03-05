@@ -1,12 +1,8 @@
-from __future__ import unicode_literals
-
-import six
-
 from django.db.models import Model
 from django.db.models.fields import Field
 
 
-class OptionsLazy(object):
+class OptionsLazy:
 
     def __init__(self, name, klass):
         self.name = name
@@ -24,7 +20,7 @@ class OptionsBase(type):
         return new_class
 
 
-class Options(six.with_metaclass(OptionsBase, object)):
+class Options(metaclass=OptionsBase):
 
     meta_class_name = None
     meta_name = None

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.utils.functional import SimpleLazyObject
 
 from is_core.config import settings as is_core_settings  # pylint: disable=E0401
