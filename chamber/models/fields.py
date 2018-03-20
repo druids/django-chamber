@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import mimetypes
 import os
 from decimal import Decimal
@@ -53,7 +51,7 @@ class DecimalField(OriginDecimalField):
         return super(DecimalField, self).formfield(**defaults)
 
 
-class RestrictedFileValidator(object):
+class RestrictedFileValidator:
 
     def __init__(self, max_upload_size):
         self.max_upload_size = max_upload_size
@@ -70,7 +68,7 @@ class RestrictedFileValidator(object):
             return data
 
 
-class AllowedContentTypesByFilenameFileValidator(object):
+class AllowedContentTypesByFilenameFileValidator:
 
     def __init__(self, content_types):
         self.content_types = content_types
@@ -84,7 +82,7 @@ class AllowedContentTypesByFilenameFileValidator(object):
         return data
 
 
-class AllowedContentTypesByContentFileValidator(object):
+class AllowedContentTypesByContentFileValidator:
 
     def __init__(self, content_types):
         self.content_types = content_types
@@ -99,7 +97,7 @@ class AllowedContentTypesByContentFileValidator(object):
         return data
 
 
-class RestrictedFileFieldMixin(object):
+class RestrictedFileFieldMixin:
     """
     Same as FileField, but you can specify:
         * allowed_content_types - list of allowed content types. Example: ['application/json', 'image/jpeg']
@@ -200,7 +198,7 @@ class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
         self._raise_error_if_value_not_allowed(value, self._get_subvalue(model_instance), model_instance)
 
 
-class EnumSequenceFieldMixin(object):
+class EnumSequenceFieldMixin:
 
     # TODO Once SmartWidget mixin is not in is-core, add formfield method with the appropriate widget
     def __init__(self, *args, **kwargs):

@@ -51,13 +51,13 @@ class DispatchersTestCase(TransactionTestCase):
     def test_should_call_dispatcher_with_invalid_value(self):
         model = TestDispatchersModel.objects.create()
         model.state = 3
-        field = TestDispatchersModel._meta.get_field_by_name('state')[0]  # pylint: disable=W0212
+        field = TestDispatchersModel._meta.get_field('state')  # pylint: disable=W0212
         StateDispatcher(lambda: False, TestDispatchersModel.STATE, field, model.state)(model)
 
     def _create_model_and_invalid_field(self):
         model = TestDispatchersModel.objects.create()
         model.state = TestDispatchersModel.STATE.SECOND
-        return model, TestDispatchersModel._meta.get_field_by_name('state')[0]  # pylint: disable=W0212
+        return model, TestDispatchersModel._meta.get_field('state')  # pylint: disable=W0212
 
     @raises(ImproperlyConfigured)
     def test_should_not_call_dispatcher_with_invalid_handler(self):

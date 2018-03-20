@@ -35,7 +35,7 @@ class TestSmartModel(chamber_models.SmartModel):
 
 
 class RelatedSmartModel(chamber_models.SmartModel):
-    test_smart_model = models.ForeignKey(TestSmartModel, related_name='test_smart_models')
+    test_smart_model = models.ForeignKey(TestSmartModel, related_name='test_smart_models', on_delete=models.CASCADE)
 
 
 class BackendUser(AbstractBaseUser):

@@ -1,15 +1,12 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 import os
 
-from six.moves import cStringIO
+from io import StringIO
 
 from django.core.management import call_command
 from django.core.serializers import base, python
 
 
-class MigrationLoadFixture(object):
+class MigrationLoadFixture:
 
     def __init__(self, migration_file, fixture_dir=None, fixture_filename=None, fixture_type='json'):
         self.migration_file = migration_file
@@ -33,5 +30,5 @@ class MigrationLoadFixture(object):
         file = os.path.join(self.fixture_dir, self.fixture_filename)
         if not os.path.isfile(file):
             raise IOError('File "%s" does not exists' % file)
-        call_command('loaddata', file, stdout=cStringIO())
+        call_command('loaddata', file, stdout=StringIO())
         python._get_model = get_model_tmp  # pylint: disable=W0212

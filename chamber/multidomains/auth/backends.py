@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.contrib.auth.backends import ModelBackend as OridginModelBackend
 from django.contrib.auth.models import Permission
 

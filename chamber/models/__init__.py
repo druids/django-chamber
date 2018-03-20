@@ -1,14 +1,8 @@
-from __future__ import unicode_literals
-
 import copy
 
 import collections
 
 from itertools import chain
-
-import six
-
-from six import python_2_unicode_compatible
 
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
@@ -65,8 +59,7 @@ def model_to_dict(instance, fields=None, exclude=None):
 ValueChange = collections.namedtuple('ValueChange', ('initial', 'current'))
 
 
-@python_2_unicode_compatible
-class ChangedFields(object):
+class ChangedFields:
     """
     Class stores changed fields and its initial and current values.
     """
@@ -174,7 +167,7 @@ class StaticChangedFields(ChangedFields):
         return self._current_dict
 
 
-class ComparableModelMixin(object):
+class ComparableModelMixin:
 
     def equals(self, obj, comparator):
         """
@@ -183,7 +176,7 @@ class ComparableModelMixin(object):
         return comparator.compare(self, obj)
 
 
-class Comparator(object):
+class Comparator:
 
     def compare(self, a, b):
         """
@@ -203,7 +196,7 @@ class AuditModel(models.Model):
         abstract = True
 
 
-class Signal(object):
+class Signal:
 
     def __init__(self, obj):
         self.connected_functions = []
@@ -248,7 +241,7 @@ class SmartModelBase(ModelBase):
         return new_cls
 
 
-class SmartModel(six.with_metaclass(SmartModelBase, AuditModel)):
+class SmartModel(AuditModel, metaclass=SmartModelBase):
 
     objects = SmartQuerySet.as_manager()
 

@@ -5,7 +5,7 @@ from chamber.importers import BulkCSVImporter, CSVImporter
 import pyprind
 
 
-class ProgressBarStream(object):
+class ProgressBarStream:
     """
     OutputStream wrapper to remove default linebreak at line endings.
     """
@@ -29,7 +29,7 @@ class ProgressBarStream(object):
         return self.stream.flush()
 
 
-class ImportCSVCommandMixin(object):
+class ImportCSVCommandMixin:
 
     def handle(self, *args, **kwargs):
         self.import_csv()
