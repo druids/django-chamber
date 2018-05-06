@@ -1,11 +1,10 @@
 from django.utils.functional import SimpleLazyObject
 
-from is_core.config import settings as is_core_settings  # pylint: disable=E0401
-from is_core.auth_token import utils  # pylint: disable=E0401
-from is_core.auth_token.middleware import TokenAuthenticationMiddlewares, get_user  # pylint: disable=E0401
-from is_core.auth_token.models import Token  # pylint: disable=E0401
-from is_core.auth_token.utils import dont_enforce_csrf_checks  # pylint: disable=E0401
-from is_core.utils import header_name_to_django  # pylint: disable=E0401
+from auth_token import utils  # pylint: disable=E0401
+from auth_token.config import settings as auth_token_settings  # pylint: disable=E0401
+from auth_token.middleware import TokenAuthenticationMiddleware, get_user  # pylint: disable=E0401
+from auth_token.models import Token  # pylint: disable=E0401
+from auth_token.utils import dont_enforce_csrf_checks, header_name_to_django  # pylint: disable=E0401
 
 from chamber import config
 from chamber.shortcuts import get_object_or_none
@@ -16,7 +15,7 @@ def get_token(request):
     Returns the token model instance associated with the given request token key.
     If no user is retrieved AnonymousToken is returned.
     """
-    if (not request.META.get(header_name_to_django(is_core_settings.AUTH_HEADER_NAME)) and
+    if (not request.META.get(header_name_to_django(auth_token_settings.HEADER_NAME)) and
             config.CHAMBER_MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME):
         ovetaker_auth_token = request.COOKIES.get(config.CHAMBER_MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME)
         token = get_object_or_none(Token, key=ovetaker_auth_token, is_active=True)
@@ -26,7 +25,7 @@ def get_token(request):
     return utils.get_token(request)
 
 
-class MultiDomainsTokenAuthenticationMiddleware(TokenAuthenticationMiddlewares):
+class MultiDomainsTokenAuthenticationMiddleware(TokenAuthenticationMiddleware):
 
     def process_request(self, request):
         """
