@@ -27,7 +27,7 @@ setup(
     install_requires=[
         'Django>=1.8',
         'Unidecode>=0.04.17',
-        'pyprind==2.9.9',
+        'pyprind>=2.11.0',
         'six>=1.10.0',
         'filemagic>=1.6',
     ],
