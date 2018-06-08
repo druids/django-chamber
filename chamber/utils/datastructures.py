@@ -5,7 +5,7 @@ from itertools import chain
 class AbstractEnum:
 
     def _has_attr(self, name):
-        return name in self.container
+        return name in self._container
 
     def _get_attr_val(self, name):
         return name
@@ -15,27 +15,35 @@ class AbstractEnum:
             return self._get_attr_val(name)
         raise AttributeError('Missing attribute %s' % name)
 
+    def __copy__(self, *args, **kwargs):
+        # Enum is immutable
+        return self
+
+    def __deepcopy__(self, *args, **kwargs):
+        # Enum is immutable
+        return self
+
 
 class Enum(AbstractEnum):
 
     def __init__(self, *items):
-        self.container = OrderedDict((
+        self._container = OrderedDict((
             item if isinstance(item, (list, tuple)) else (item, item)
             for item in items
         ))
         super(Enum, self).__init__()
 
     def _get_attr_val(self, name):
-        return self.container[name]
+        return self._container[name]
 
     def __iter__(self):
-        return self.container.values().__iter__()
+        return self._container.values().__iter__()
 
 
 class NumEnum(AbstractEnum):
 
     def __init__(self, *items):
-        self.container = OrderedDict()
+        self._container = OrderedDict()
         super(NumEnum, self).__init__()
         i = 0
         for item in items:
@@ -47,12 +55,12 @@ class NumEnum(AbstractEnum):
                 key = item
                 i += 1
 
-            if i in self.container.values():
+            if i in self._container.values():
                 raise ValueError('Index %s already exists, please renumber choices')
-            self.container[key] = i
+            self._container[key] = i
 
     def _get_attr_val(self, name):
-        return self.container[name]
+        return self._container[name]
 
 
 class AbstractChoicesEnum:
@@ -81,7 +89,7 @@ class AbstractChoicesEnum:
 class ChoicesEnum(AbstractChoicesEnum, AbstractEnum):
 
     def __init__(self, *items):
-        self.container = OrderedDict()
+        self._container = OrderedDict()
         super(ChoicesEnum, self).__init__()
         for item in items:
             if len(item) == 3:
@@ -89,25 +97,25 @@ class ChoicesEnum(AbstractChoicesEnum, AbstractEnum):
             elif len(item) == 2:
                 key, label = item
                 val = key
-            self.container[key] = (val, label)
+            self._container[key] = (val, label)
 
     def get_name(self, i):
-        for key, (val, _) in self.container.items():
+        for key, (val, _) in self._container.items():
             if val == i:
                 return key
         return None
 
     def _get_attr_val(self, name):
-        return self.container[name][0]
+        return self._container[name][0]
 
     def _get_choices(self):
-        return list(self.container.values())
+        return list(self._container.values())
 
 
 class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
 
     def __init__(self, *items):
-        self.container = OrderedDict()
+        self._container = OrderedDict()
         super(ChoicesNumEnum, self).__init__()
         i = 0
         for item in items:
@@ -121,21 +129,21 @@ class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
             else:
                 raise ValueError('Wrong input data format')
 
-            if i in {j for j, _ in self.container.values()}:
+            if i in {j for j, _ in self._container.values()}:
                 raise ValueError('Index %s already exists, please renumber choices')
-            self.container[key] = (i, val)
+            self._container[key] = (i, val)
 
     def get_name(self, i):
-        for key, (number, _) in self.container.items():
+        for key, (number, _) in self._container.items():
             if number == i:
                 return key
         return None
 
     def _get_attr_val(self, name):
-        return self.container[name][0]
+        return self._container[name][0]
 
     def _get_choices(self):
-        return list(self.container.values())
+        return list(self._container.values())
 
 
 class SubstatesChoicesNumEnum(ChoicesNumEnum):
