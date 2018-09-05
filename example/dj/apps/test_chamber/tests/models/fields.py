@@ -8,9 +8,8 @@ from chamber.forms import fields as form_fields
 from chamber.models.fields import generate_random_upload_path
 from chamber.shortcuts import change_and_save
 
-from germanium.anotations import data_provider  # pylint: disable=E0401
-from germanium.tools import (assert_equal, assert_is_none,  # pylint: disable=E0401
-                             assert_is_not_none, assert_raises, assert_true)  # pylint: disable=E0401
+from germanium.anotations import data_provider
+from germanium.tools import assert_equal, assert_is_none, assert_false, assert_is_not_none, assert_raises, assert_true
 
 from test_chamber.models import CSVRecord, TestFieldsModel  # pylint: disable=E0401
 
@@ -96,27 +95,27 @@ class ModelFieldsTestCase(TransactionTestCase):
         # These files can be saved because it has supported type
         for filename in ('all_fields_filled.csv', 'test.pdf'):
             with open('data/{}'.format(filename), 'rb') as f:
-                assert_is_none(self.inst.file)
+                assert_false(self.inst.file)
                 self.inst.file.save(filename, File(f))
-                assert_is_not_none(self.inst.file)
+                assert_true(self.inst.file)
                 change_and_save(self.inst, file=None)
 
         # Image file is not supported
         with open('data/test2.jpg', 'rb') as f:
-            assert_is_none(self.inst.file)
+            assert_false(self.inst.file)
             assert_raises(PersistenceException, self.inst.file.save, 'image.jpeg', File(f))
 
     def test_image_field_max_upload_size(self):
         # File is can be stored
         with open('data/test2.jpg', 'rb') as f:
-            assert_is_none(self.inst.image)
+            assert_false(self.inst.image)
             self.inst.image.save('test2.jpg', File(f))
-            assert_is_not_none(self.inst.image)
+            assert_true(self.inst.image)
             change_and_save(self.inst, image=None)
 
         # File is too large to store
         with open('data/test.jpg', 'rb') as f:
-            assert_is_none(self.inst.image)
+            assert_false(self.inst.image)
             assert_raises(PersistenceException, self.inst.image.save, 'image.jpeg', File(f))
 
         # File has a wrong extension

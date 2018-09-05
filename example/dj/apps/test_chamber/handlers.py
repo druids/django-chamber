@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-
 def create_test_smart_model_handler(instance, **kwargs):
     from .models import TestSmartModel  # NOQA
 

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from nose.tools import raises  # pylint: disable=E0401
 
 from django.core.exceptions import ImproperlyConfigured

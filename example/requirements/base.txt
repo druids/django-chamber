@@ -1,6 +1,6 @@
 Django==1.11
 diff-match-patch==20110725.1
-https://github.com/LukasRychtecky/germanium/tarball/1.0.12#egg=germanium-1.0.12
+django-germanium==2.0.5
 six==1.10.0
 coverage==4.0.2
 pyprind==2.9.9

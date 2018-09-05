@@ -1,18 +1,30 @@
+import re
+
 from collections import MutableSet, OrderedDict
 from itertools import chain
 
 
+ENUM_KEY_PATTERN = re.compile(r'^[a-zA-Z][a-zA-Z0-9_]*$')
+
+
 class AbstractEnum:
+
+    def __init__(self, *items):
+        for k, _ in items:
+            if not isinstance(k, str):
+                raise ValueError('Enum key "{}" must be string'.format(k))
+            if not ENUM_KEY_PATTERN.match(k):
+                raise ValueError('Enum key "{}" has invalid format'.format(k))
+
+        self._container = OrderedDict(items)
+        self._reverse_container = {item[1]: item[0] for item in items}
 
     def _has_attr(self, name):
         return name in self._container
 
-    def _get_attr_val(self, name):
-        return name
-
     def __getattr__(self, name):
         if self._has_attr(name):
-            return self._get_attr_val(name)
+            return self._container[name]
         raise AttributeError('Missing attribute %s' % name)
 
     def __copy__(self, *args, **kwargs):
@@ -23,127 +35,86 @@ class AbstractEnum:
         # Enum is immutable
         return self
 
-
-class Enum(AbstractEnum):
-
-    def __init__(self, *items):
-        self._container = OrderedDict((
-            item if isinstance(item, (list, tuple)) else (item, item)
-            for item in items
-        ))
-        super(Enum, self).__init__()
-
-    def _get_attr_val(self, name):
-        return self._container[name]
+    def __contains__(self, item):
+        return item in self._reverse_container
 
     def __iter__(self):
         return self._container.values().__iter__()
 
+    @property
+    def all(self):
+        return tuple(self)
 
-class NumEnum(AbstractEnum):
+    def get_name(self, val):
+        return self._reverse_container.get(val)
+
+
+class Enum(AbstractEnum):
 
     def __init__(self, *items):
-        self._container = OrderedDict()
-        super(NumEnum, self).__init__()
+        super().__init__(*(
+            item if isinstance(item, (list, tuple)) else (item, item)
+            for item in items
+        ))
+
+
+class NumEnum(Enum):
+
+    def __init__(self, *items):
+        used_ids = set()
+
+        enum_items = []
         i = 0
         for item in items:
             if len(item) == 2:
                 key, i = item
                 if not isinstance(i, int):
-                    raise ValueError('Last value of item must by integer')
+                    raise ValueError('Choice value of item must by integer')
             else:
                 key = item
                 i += 1
 
-            if i in self._container.values():
+            if i in used_ids:
                 raise ValueError('Index %s already exists, please renumber choices')
-            self._container[key] = i
 
-    def _get_attr_val(self, name):
-        return self._container[name]
+            used_ids.add(i)
+            enum_items.append((key, i))
+        super().__init__(*enum_items)
 
 
 class AbstractChoicesEnum:
 
+    def __init__(self, *items):
+        enum_items = []
+        for item in items:
+            assert len(item) in {2, 3}, 'Choice item array length must be two or three'
+
+            if len(item) == 3:
+                enum_items.append((item[0], item[2]))
+            else:
+                enum_items.append(item[0])
+
+        super().__init__(*enum_items)
+        self.choices = tuple(
+            (k, items[i][1]) for i, k in enumerate(self._container.values())
+        )
+
     def _get_labels_dict(self):
-        return dict(self._get_choices())
-
-    def _get_choices(self):
-        raise NotImplementedError
-
-    @property
-    def choices(self):
-        return self._get_choices()
-
-    @property
-    def all(self):
-        return (key for key, _ in self._get_choices())
+        return dict(self.choices)
 
     def get_label(self, name):
-        labels = dict(self._get_choices())
+        labels = self._get_labels_dict()
         if name in labels:
             return labels[name]
         raise AttributeError('Missing label with index %s' % name)
 
 
-class ChoicesEnum(AbstractChoicesEnum, AbstractEnum):
-
-    def __init__(self, *items):
-        self._container = OrderedDict()
-        super(ChoicesEnum, self).__init__()
-        for item in items:
-            if len(item) == 3:
-                key, label, val = item
-            elif len(item) == 2:
-                key, label = item
-                val = key
-            self._container[key] = (val, label)
-
-    def get_name(self, i):
-        for key, (val, _) in self._container.items():
-            if val == i:
-                return key
-        return None
-
-    def _get_attr_val(self, name):
-        return self._container[name][0]
-
-    def _get_choices(self):
-        return list(self._container.values())
+class ChoicesEnum(AbstractChoicesEnum, Enum):
+    pass
 
 
-class ChoicesNumEnum(AbstractChoicesEnum, AbstractEnum):
-
-    def __init__(self, *items):
-        self._container = OrderedDict()
-        super(ChoicesNumEnum, self).__init__()
-        i = 0
-        for item in items:
-            if len(item) == 3:
-                key, val, i = item
-                if not isinstance(i, int):
-                    raise ValueError('Last value of item must by integer')
-            elif len(item) == 2:
-                key, val = item
-                i += 1
-            else:
-                raise ValueError('Wrong input data format')
-
-            if i in {j for j, _ in self._container.values()}:
-                raise ValueError('Index %s already exists, please renumber choices')
-            self._container[key] = (i, val)
-
-    def get_name(self, i):
-        for key, (number, _) in self._container.items():
-            if number == i:
-                return key
-        return None
-
-    def _get_attr_val(self, name):
-        return self._container[name][0]
-
-    def _get_choices(self):
-        return list(self._container.values())
+class ChoicesNumEnum(AbstractChoicesEnum, NumEnum):
+    pass
 
 
 class SubstatesChoicesNumEnum(ChoicesNumEnum):
@@ -171,7 +142,7 @@ class SequenceChoicesEnumMixin:
         self.initial_states = initial_states
 
         # The last value of every item are omitted and send to ChoicesEnum constructor
-        super(SequenceChoicesEnumMixin, self).__init__(*(item[:-1] for item in items if item[0] is not None))
+        super().__init__(*(item[:-1] for item in items if item[0] is not None))
 
         self.first_choices = self._get_first_choices(items)
 

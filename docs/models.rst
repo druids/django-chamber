@@ -91,11 +91,11 @@ SmartModel
 
         List of defined pre or post save dispatchers. More obout it will find _dispatchers
 
-    .. property:: has_changed
+    .. attribute:: has_changed
 
         Returns ``True`` or ``False`` depending on whether instance was changed
 
-    .. property:: initial_values
+    .. attribute:: initial_values
 
         Returns initial values of the object from loading instance from database. It should represent actual state of the object in the database
 

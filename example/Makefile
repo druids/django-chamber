@@ -17,7 +17,6 @@ PYTHON = python3.6
 PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
 PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL}).$(word 2,${PYTHON_VERSION_FULL})
 TYPE = dev
-OS = $(shell uname)
 
 INIT_DATA_PATH = data
 INIT_DATA_FILE = $(INIT_DATA_PATH)/init.json
@@ -38,12 +37,11 @@ cleanvar: clean cleanvirtualenv
 cleanall: cleanvar
 
 pip:
-	$(PYTHON_BIN)/pip install --process-dependency-links --allow-all-external -r requirements/base.txt
+	$(PYTHON_BIN)/pip install --process-dependency-links -r requirements/base.txt
 
 initvirtualenv:
 	virtualenv -p $(PYTHON) --no-site-packages $(VIRTUAL_ENV)
-	$(PYTHON_BIN)/pip install --upgrade
-	$(PYTHON_BIN)/pip install setuptools --no-use-wheel --upgrade
+	$(PYTHON_BIN)/pip install setuptools --upgrade
 
 bootstrap: initvirtualenv pip
 
@@ -91,8 +89,6 @@ runserver:
 install: cleanvar bootstrap initlog linklibrary initdb syncdb initdata initenv
 
 update: clean cleanvirtualenv cleanjs bootstrap syncdb initenv
-
-include build/Makefile.$(OS)
 
 linklibrary:
 	ln -sf $$(pwd)/../chamber/ $$($(PYTHON_BIN)/python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())");
