@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from six import StringIO
 
 from django.core.management import call_command

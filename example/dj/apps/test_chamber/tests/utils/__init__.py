@@ -1,6 +1,3 @@
-# -*- coding: UTF-8 -*-
-from __future__ import unicode_literals
-
 from django.test import TestCase
 from django.utils.functional import cached_property
 from django.utils.safestring import SafeData, mark_safe

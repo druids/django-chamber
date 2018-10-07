@@ -33,9 +33,49 @@ Enums
 
 Base enumeration class with controlled ``__getattr__``.
 
+  .. attribute::  chamber.utils.datastructures.AbstractEnum.all
+
+  Returns all enum values in a tuple.
+
+  .. method::  chamber.utils.datastructures.AbstractEnum.__iter__
+
+  Returns iterator over enum values.
+
+  .. method::  chamber.utils.datastructures.AbstractEnum.get_name
+
+  Returns name of the choice accorting to its value.
+
+  .. method::  chamber.utils.datastructures.AbstractEnum.get_name
+
+  Implementation of in operator. Return ``True`` if value is part of the enum.
+
+
 .. class:: chamber.utils.datastructures.Enum
 
-Python's ``set`` with ``AbstractEnum`` behaviour.
+Python's ``set`` with ``AbstractEnum`` behaviour. Enum key can be only string type. Key and values can be different.
+
+::
+
+    >>> enum = NumEnum('A', 'B') #  {'A': 'A', 'B': 'B'}
+    >>> enum.all
+    ('A', 'B')
+    >>> 'A' in enum
+    True
+    >>> list(enum)
+    ['A', 'B']
+    >>> enum.A
+    'A'
+
+    >>> enum = NumEnum(('A', 'a'), ('B', 'b')) #  {'A': 'a', 'B': 'b'}
+    >>> enum.all
+    ('a', 'b')
+    >>> 'a' in enum
+    True
+    >>> list(enum)
+    ['a', 'b']
+    >>> enum.A
+    'a'
+
 
 .. class:: chamber.utils.datastructures.NumEnum
 
@@ -43,8 +83,25 @@ Python's ``dict`` with ``AbstractEnum`` behaviour.
 
 ::
 
-    >>> NumEnum('a', 'b')
-    {'a': 1, 'b': 2}
+    >>> enum = NumEnum('A', 'B') #  {'A': 1, 'B': 2}
+    >>> enum.all
+    (1, 2)
+    >>> 1 in enum
+    True
+    >>> list(enum)
+    [1, 2]
+    >>> enum.A
+    1
+
+    >>> enum = NumEnum(('A', 6), ('B', 5)) #  {'A': 6, 'B': 5}
+    >>> enum.all
+    (6, 5)
+    >>> 5 in enum
+    True
+    >>> list(enum)
+    [6, 5]
+    >>> enum.A
+    6
 
 .. class:: chamber.utils.datastructures.AbstractChoicesEnum
 
@@ -57,13 +114,21 @@ Base choices class (can be used as a model field's ``choices`` argument).
 
 ::
 
-    >>> enum = ChoicesEnum(('OK', 'ok'), ('KO', 'ko'))
-    >>> enum
-    {'OK': 'ok', 'KO': 'ko'}
+    >>> enum = ChoicesEnum(('OK', 'label ok'), ('KO', 'label ko'))  # {'OK': ('OK', 'label ok), 'ko': ('KO', 'label ko)}
+    >>> enum.OK
+    'OK'
+    >>> enum.choices
+    [('OK', 'ok'), ('KO', 'ko')]
+    >>> enum.get_label(enum.OK)
+    'label ok'
+
+    >>> enum = ChoicesEnum(('OK', 'label ok', 'ok'), ('KO', 'label ko', 'ko'))  #  {'OK': ('ok', 'label ok), 'ko': ('ko', 'label ko)}
     >>> enum.OK
     'ok'
     >>> enum.choices
-    [('OK', 'ok'), ('KO', 'ko')]
+    [('ok', 'label ok'), ('ko', 'label ko')]
+    >>> enum.get_label(enum.OK)
+    'label ok'
 
 .. class:: chamber.utils.datastructures.ChoicesNumEnum
 
@@ -72,7 +137,7 @@ Base choices class (can be used as a model field's ``choices`` argument).
 
 ::
 
-    >>> enum = ChoicesNumEnum(('OK', 'ok', 1), ('KO', 'ko', 2))
+    >>> enum = ChoicesNumEnum(('OK', 'label ok', 1), ('KO', 'label ko', 2))
     >>> enum.KO
     2
     >>> enum.choices

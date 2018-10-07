@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.test import TestCase
 
 from chamber.formatters import natural_number_with_currency
