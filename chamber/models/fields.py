@@ -212,9 +212,11 @@ class EnumSequenceFieldMixin:
     def validate(self, value, model_instance):
         super(EnumSequenceFieldMixin, self).validate(value, model_instance)
         if self.enum:
-            prev_value = model_instance.pk and model_instance.initial_values[self.attname] or None
+            prev_value = (not model_instance._state.adding and model_instance.initial_values[self.attname]) or None
             allowed_next_values = self.enum.get_allowed_next_states(prev_value, model_instance)
-            if self.name in model_instance.changed_fields and value not in allowed_next_values:
+
+            if ((self.name in model_instance.changed_fields or model_instance._state.adding) and
+                value not in allowed_next_values):
                 raise ValidationError(
                     ugettext('Allowed choices are {}.').format(
                         ', '.join(('{} ({})'.format(*(self.enum.get_label(val), val)) for val in allowed_next_values))))
