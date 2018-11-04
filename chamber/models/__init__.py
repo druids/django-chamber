@@ -323,7 +323,7 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
 
         origin = self.__class__
 
-        change = bool(self.pk)
+        change = not self._state.adding
         kwargs.update(self._get_save_extra_kwargs())
 
         self._call_pre_save(change, self.changed_fields, *args, **kwargs)
