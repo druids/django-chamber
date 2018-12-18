@@ -1,14 +1,10 @@
-import copy
-
 import collections
 
 from itertools import chain
 
-from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import force_text
 
 from chamber.exceptions import PersistenceException
 from chamber.patch import Options
@@ -46,12 +42,16 @@ def field_to_dict(field, instance):
 
 
 @singleton
-class UnknownSingleton:
+class Unknown:
 
     def __repr__(self):
         return 'unknown'
 
-Unknown = UnknownSingleton()
+    def __bool__(self):
+        return False
+
+
+Unknown = Unknown()
 
 
 def unknown_model_fields_to_dict(instance, fields=None, exclude=None):
@@ -93,6 +93,10 @@ class ChangedFields:
     @property
     def current_values(self):
         raise NotImplementedError
+
+    @property
+    def changed_values(self):
+        return {k: value_change.current for k, value_change in self.diff.items()}
 
     @property
     def diff(self):
@@ -159,7 +163,7 @@ class DynamicChangedFields(ChangedFields):
 
     def __init__(self, instance):
         super().__init__(
-            self._get_unknown_dict(instance) if instance._state.adding else self._get_instance_dict(instance)
+            self._get_unknown_dict(instance) if instance.is_adding else self._get_instance_dict(instance)
         )
         self.instance = instance
 
@@ -276,9 +280,19 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
     dispatchers = []
 
     def __init__(self, *args, **kwargs):
-        super(SmartModel, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+        self.is_adding = True
+        self.is_changing = False
         self.changed_fields = DynamicChangedFields(self)
         self.post_save = Signal(self)
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        new = super().from_db(db, field_names, values)
+        new.is_adding = False
+        new.is_changing = True
+        new.changed_fields = DynamicChangedFields(new)
+        return new
 
     @property
     def has_changed(self):
@@ -339,9 +353,8 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
     def _call_pre_save(self, *args, **kwargs):
         self._pre_save(*args, **kwargs)
 
-    def _save(self, is_cleaned_pre_save=None, is_cleaned_post_save=None, force_insert=False, force_update=False,
-              using=None, update_fields=None, *args, **kwargs):
-
+    def _save(self, update_only_changed_fields=False, is_cleaned_pre_save=None, is_cleaned_post_save=None,
+              force_insert=False, force_update=False, using=None, update_fields=None, *args, **kwargs):
         is_cleaned_pre_save = (
             self._smart_meta.is_cleaned_pre_save if is_cleaned_pre_save is None else is_cleaned_pre_save
         )
@@ -351,21 +364,23 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
 
         origin = self.__class__
 
-        change = not self._state.adding
         kwargs.update(self._get_save_extra_kwargs())
 
-        self._call_pre_save(change, self.changed_fields, *args, **kwargs)
+        self._call_pre_save(self.is_changing, self.changed_fields, *args, **kwargs)
         if is_cleaned_pre_save:
             self._clean_pre_save(*args, **kwargs)
-        dispatcher_pre_save.send(sender=origin, instance=self, change=change,
+        dispatcher_pre_save.send(sender=origin, instance=self, change=self.is_changing,
                                  changed_fields=self.changed_fields.get_static_changes(),
                                  *args, **kwargs)
+        if not update_fields and update_only_changed_fields:
+            update_fields = list(self.changed_fields.keys()) + ['changed_at']
         super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
                                      update_fields=update_fields)
-        self._call_post_save(change, self.changed_fields, *args, **kwargs)
+
+        self._call_post_save(self.is_changing, self.changed_fields, *args, **kwargs)
         if is_cleaned_post_save:
             self._clean_post_save(*args, **kwargs)
-        dispatcher_post_save.send(sender=origin, instance=self, change=change,
+        dispatcher_post_save.send(sender=origin, instance=self, change=self.is_changing,
                                   changed_fields=self.changed_fields.get_static_changes(),
                                   *args, **kwargs)
         self.post_save.send()
@@ -376,12 +391,17 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
     def _call_post_save(self, *args, **kwargs):
         self._post_save(*args, **kwargs)
 
-    def save(self, *args, **kwargs):
+    def save_simple(self, *args, **kwargs):
+        super(SmartModel, self).save(*args, **kwargs)
+
+    def save(self, update_only_changed_fields=False, *args, **kwargs):
         if self._smart_meta.is_save_atomic:
             with transaction.atomic():
-                self._save(*args, **kwargs)
+                self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
         else:
-            self._save(*args, **kwargs)
+            self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
+        self.is_adding = False
+        self.is_changing = True
         self.changed_fields = DynamicChangedFields(self)
 
     def _pre_delete(self, *args, **kwargs):
@@ -430,13 +450,13 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         change(self, **changed_fields)
         return self
 
-    def change_and_save(self, **changed_fields):
+    def change_and_save(self, update_only_changed_fields=False, **changed_fields):
         """
         Changes a given `changed_fields` on this object, saves it and returns itself.
         :param changed_fields: fields to change
         :return: self
         """
-        change_and_save(self, **changed_fields)
+        change_and_save(self, update_only_changed_fields=update_only_changed_fields, **changed_fields)
         return self
 
     class Meta:
