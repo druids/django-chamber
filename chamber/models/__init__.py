@@ -13,6 +13,7 @@ from django.utils.encoding import force_text
 from chamber.exceptions import PersistenceException
 from chamber.patch import Options
 from chamber.shortcuts import change_and_save, change, bulk_change_and_save
+from chamber.utils.decorators import singleton
 
 from .fields import *  # NOQA exposing classes and functions as a module API
 from .signals import dispatcher_post_save, dispatcher_pre_save
@@ -42,6 +43,24 @@ def field_to_dict(field, instance):
 
     return (many_to_many_field_to_dict(field, instance) if isinstance(field, ManyToManyField)
             else field.value_from_object(instance))
+
+
+@singleton
+class UnknownSingleton:
+
+    def __repr__(self):
+        return 'unknown'
+
+Unknown = UnknownSingleton()
+
+
+def unknown_model_fields_to_dict(instance, fields=None, exclude=None):
+
+    return {
+        field.name: Unknown
+        for field in chain(instance._meta.concrete_fields, instance._meta.many_to_many)  # pylint: disable=W0212
+        if not should_exclude_field(field, fields, exclude)
+    }
 
 
 def model_to_dict(instance, fields=None, exclude=None):
@@ -139,11 +158,20 @@ class DynamicChangedFields(ChangedFields):
     """
 
     def __init__(self, instance):
-        super(DynamicChangedFields, self).__init__(self._get_instance_dict(instance))
+        super().__init__(
+            self._get_unknown_dict(instance) if instance._state.adding else self._get_instance_dict(instance)
+        )
         self.instance = instance
 
+    def _get_unknown_dict(self, instance):
+        return unknown_model_fields_to_dict(
+            instance, fields=(field.name for field in instance._meta.fields)
+        )
+
     def _get_instance_dict(self, instance):
-        return model_to_dict(instance, fields=(field.name for field in instance._meta.fields))
+        return model_to_dict(
+            instance, fields=(field.name for field in instance._meta.fields)
+        )
 
     @property
     def current_values(self):
@@ -159,7 +187,7 @@ class StaticChangedFields(ChangedFields):
     """
 
     def __init__(self, initial_dict, current_dict):
-        super(StaticChangedFields, self).__init__(initial_dict)
+        super().__init__(initial_dict)
         self._current_dict = current_dict
 
     @property
