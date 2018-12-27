@@ -5,7 +5,7 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 
 from chamber.exceptions import PersistenceException
-from chamber.models import DynamicChangedFields, Comparator
+from chamber.models import DynamicChangedFields, Comparator, Unknown
 
 from germanium.tools import assert_equal, assert_false, assert_raises, assert_true  # pylint: disable=E0401
 
@@ -65,6 +65,30 @@ class TestPostProxySmartModel(TestSmartModel):
 
 
 class ModelsTestCase(TransactionTestCase):
+
+    def test_smart_model_initial_values_should_be_unknown_for_not_saved_instance(self):
+        obj = DiffModel(name='test', datetime=timezone.now(), number=2)
+        assert_true(obj.has_changed)
+        assert_true(obj.changed_fields)
+        assert_equal(set(obj.changed_fields.keys()), {'created_at', 'changed_at', 'id', 'datetime', 'name', 'number'})
+        assert_true(obj.is_adding)
+        assert_false(obj.is_changing)
+        assert_true(all(v is Unknown for v in obj.initial_values.values()))
+        assert_true(all(not bool(v) for v in obj.initial_values.values()))
+
+        obj.save()
+        assert_false(obj.has_changed)
+        assert_false(obj.changed_fields)
+        assert_false(obj.is_adding)
+        assert_true(obj.is_changing)
+        assert_true(all(v is not Unknown for v in obj.initial_values.values()))
+
+        obj = DiffModel.objects.get(pk=obj.pk)
+        assert_false(obj.has_changed)
+        assert_false(obj.changed_fields)
+        assert_false(obj.is_adding)
+        assert_true(obj.is_changing)
+        assert_true(all(v is not Unknown for v in obj.initial_values.values()))
 
     def test_smart_model_changed_fields(self):
         obj = TestProxySmartModel.objects.create(name='a')

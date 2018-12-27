@@ -57,7 +57,7 @@ class PropertyDispatcher(BaseDispatcher):
 
     def __init__(self, handler, property_name, signal=None):
         self.property_name = property_name
-        super(PropertyDispatcher, self).__init__(handler, signal)
+        super().__init__(handler, signal)
 
     def _can_dispatch(self, instance, **kwargs):
         return getattr(instance, self.property_name)
@@ -78,7 +78,7 @@ class StateDispatcher(BaseDispatcher):
     """
 
     def _validate_init_params(self):
-        super(StateDispatcher, self)._validate_init_params()
+        super()._validate_init_params()
         if self.field_value not in {value for value, _ in self.enum.choices}:
             raise ImproperlyConfigured('Enum of FieldDispatcher does not contain {}.'.format(self.field_value))
 
@@ -86,8 +86,7 @@ class StateDispatcher(BaseDispatcher):
         self.enum = enum
         self.field = field
         self.field_value = field_value
-
-        super(StateDispatcher, self).__init__(handler, signal=signal)
+        super().__init__(handler, signal=signal)
 
     def _can_dispatch(self, instance, change, changed_fields, *args, **kwargs):
         return (

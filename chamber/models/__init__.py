@@ -42,7 +42,7 @@ def field_to_dict(field, instance):
 
 
 @singleton
-class Unknown:
+class UnknownSingleton:
 
     def __repr__(self):
         return 'unknown'
@@ -51,7 +51,7 @@ class Unknown:
         return False
 
 
-Unknown = Unknown()
+Unknown = UnknownSingleton()
 
 
 def unknown_model_fields_to_dict(instance, fields=None, exclude=None):
@@ -251,12 +251,12 @@ class SmartQuerySet(models.QuerySet):
         """
         return self.model.objects.filter(pk__in=self.values_list('pk', flat=True))
 
-    def change_and_save(self, **chaned_fields):
+    def change_and_save(self, update_only_changed_fields=False, **chaned_fields):
         """
         Changes a given `changed_fields` on each object in the queryset, saves objects
         and returns the changed objects in the queryset.
         """
-        bulk_change_and_save(self, **chaned_fields)
+        bulk_change_and_save(self, update_only_changed_fields=update_only_changed_fields, **chaned_fields)
         return self.filter()
 
 
@@ -313,7 +313,7 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
 
         if errors:
             raise ValidationError(errors)
-        super(SmartModel, self).full_clean(exclude=exclude, *args, **kwargs)
+        super().full_clean(exclude=exclude, *args, **kwargs)
 
     def _clean_save(self, *args, **kwargs):
         self._persistence_clean(*args, **kwargs)
@@ -374,7 +374,10 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
                                  *args, **kwargs)
         if not update_fields and update_only_changed_fields:
             update_fields = list(self.changed_fields.keys()) + ['changed_at']
-        super(SmartModel, self).save(force_insert=force_insert, force_update=force_update, using=using,
+            # remove primary key from updating fields
+            if self._meta.pk.name in update_fields:
+                update_fields.remove(self._meta.pk.name)
+        super().save(force_insert=force_insert, force_update=force_update, using=using,
                                      update_fields=update_fields)
 
         self._call_post_save(self.is_changing, self.changed_fields, *args, **kwargs)
@@ -392,7 +395,7 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         self._post_save(*args, **kwargs)
 
     def save_simple(self, *args, **kwargs):
-        super(SmartModel, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def save(self, update_only_changed_fields=False, *args, **kwargs):
         if self._smart_meta.is_save_atomic:
@@ -420,7 +423,7 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         if is_cleaned_pre_delete:
             self._clean_pre_delete(*args, **kwargs)
 
-        super(SmartModel, self).delete(*args, **kwargs)
+        super().delete(*args, **kwargs)
 
         self._post_delete(*args, **kwargs)
 
@@ -453,7 +456,8 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
     def change_and_save(self, update_only_changed_fields=False, **changed_fields):
         """
         Changes a given `changed_fields` on this object, saves it and returns itself.
-        :param changed_fields: fields to change
+        :param update_only_changed_fields: only changed fields will be updated in the database.
+        :param changed_fields: fields to change.
         :return: self
         """
         change_and_save(self, update_only_changed_fields=update_only_changed_fields, **changed_fields)

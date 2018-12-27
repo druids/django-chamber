@@ -25,7 +25,7 @@ def simple_count(filename, encoding):
 class DummyOutputStream(io.StringIO):
 
     def write(self, *args, **kwargs):
-        super(DummyOutputStream, self).write(*args)
+        super().write(*args)
 
 
 class AbstractCSVImporter:
