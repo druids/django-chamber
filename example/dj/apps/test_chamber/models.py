@@ -76,7 +76,7 @@ class TestFieldsModel(chamber_models.SmartModel):
     decimal = chamber_fields.DecimalField(null=True, blank=True, min=3, max=10, max_digits=5, decimal_places=3)
     state = models.IntegerField(null=True, blank=False, choices=STATE.choices, default=STATE.OK)
     state_reason = chamber_models.SubchoicesPositiveIntegerField(null=True, blank=True, enum=STATE_REASON,
-                                                                 subchoices_field_name='state',
+                                                                 supchoices_field_name='state',
                                                                  default=STATE_REASON.SUB_OK_1)
     state_prev = chamber_models.PrevValuePositiveIntegerField(verbose_name=_('previous state'), null=False, blank=False,
                                                               copy_field_name='state', choices=STATE.choices,

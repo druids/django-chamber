@@ -189,8 +189,7 @@ class InstanceOneTimeOnSuccessHandler(OneTimeOnSuccessHandler):
 
     def _get_instance(self):
         instance = self.kwargs_list[0]['instance']
-        instance.refresh_from_db()
-        return instance
+        return instance.__class__.objects.get(pk=instance.pk)
 
     def _get_unique_id(self):
         instance = self.kwargs_list[0]['instance']

@@ -14,7 +14,7 @@ class OptionsLazy:
 
 class OptionsBase(type):
     def __new__(cls, *args, **kwargs):
-        new_class = super(OptionsBase, cls).__new__(cls, *args, **kwargs)
+        new_class = super().__new__(cls, *args, **kwargs)
         if new_class.model_class and new_class.meta_name:
             setattr(new_class.model_class, new_class.meta_name, OptionsLazy(new_class.meta_name, new_class))
         return new_class
