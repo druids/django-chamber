@@ -38,7 +38,7 @@ class ImportCSVCommandMixin:
 class BulkImportCSVCommand(ImportCSVCommandMixin, BulkCSVImporter, BaseCommand):
 
     def __init__(self, *args, **kwargs):
-        super(BulkImportCSVCommand, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.bar = None
 
     def _pre_import_rows(self, row_count):

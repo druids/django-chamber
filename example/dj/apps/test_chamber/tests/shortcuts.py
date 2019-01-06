@@ -10,7 +10,7 @@ from chamber.shortcuts import (bulk_change, bulk_change_and_save, bulk_save, cha
 
 from germanium.tools import assert_equal, assert_is_none, assert_raises  # pylint: disable=E0401
 
-from test_chamber.models import ShortcutsModel
+from test_chamber.models import ShortcutsModel, DiffModel
 
 
 class ShortcutsTestCase(TestCase):
@@ -71,6 +71,14 @@ class ShortcutsTestCase(TestCase):
         change_and_save(obj, name='modified')
         assert_equal(obj.name, 'modified')
         assert_equal(ShortcutsModel.objects.first().name, 'modified')  # instance is changed and saved to DB
+
+    def test_change_and_save_with_update_only_changed_fields_should_change_only_defined_fields(self):
+        obj = DiffModel.objects.create(name='test', datetime=timezone.now(), number=2)
+        DiffModel.objects.filter(pk=obj.pk).update(name='test2')
+        obj.change_and_save(number=3, update_only_changed_fields=True)
+        obj.refresh_from_db()
+        assert_equal(obj.name, 'test2')
+        assert_equal(obj.number, 3)
 
     def test_bulk_change_and_save(self):
         obj1 = ShortcutsModel.objects.create(name='test1', datetime=timezone.now(), number=1)

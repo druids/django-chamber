@@ -55,16 +55,34 @@ def change(obj, **changed_fields):
     """
     Changes a given `changed_fields` on object and returns changed object.
     """
-    [setattr(obj, field_name, value) for field_name, value in changed_fields.items()]
+    obj_field_names = {
+        field.name for field in obj._meta.fields
+    } | {
+        field.attname for field in obj._meta.fields
+    } | {'pk'}
+
+    for field_name, value in changed_fields.items():
+        if field_name not in obj_field_names:
+            raise ValueError("'{}' is an invalid field name".format(field_name))
+        setattr(obj, field_name, value)
     return obj
 
 
-def change_and_save(obj, **changed_fields):
+def change_and_save(obj, update_only_changed_fields=False, **changed_fields):
     """
     Changes a given `changed_fields` on object, saves it and returns changed object.
     """
+    from chamber.models import SmartModel
+
     change(obj, **changed_fields)
-    obj.save()
+    if update_only_changed_fields and not isinstance(obj, SmartModel):
+        raise TypeError('update_only_changed_fields can be used only with SmartModel')
+
+    save_kwargs = {}
+    if update_only_changed_fields:
+        save_kwargs['update_only_changed_fields'] = True
+
+    obj.save(**save_kwargs)
     return obj
 
 
@@ -75,12 +93,15 @@ def bulk_change(iterable, **changed_fields):
     return [change(obj, **changed_fields) for obj in iterable]
 
 
-def bulk_change_and_save(iterable, **changed_fields):
+def bulk_change_and_save(iterable, update_only_changed_fields=False, **changed_fields):
     """
     Changes a given `changed_fields` on each object in a given `iterable`, saves objects
     and returns the changed objects.
     """
-    return [change_and_save(obj, **changed_fields) for obj in iterable]
+    return [
+        change_and_save(obj, update_only_changed_fields=update_only_changed_fields, **changed_fields)
+        for obj in iterable
+    ]
 
 
 def bulk_save(iterable):

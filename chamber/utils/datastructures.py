@@ -124,7 +124,7 @@ class SubstatesChoicesNumEnum(ChoicesNumEnum):
 
         self.categories = {}
 
-        super(SubstatesChoicesNumEnum, self).__init__(*(item for item in chain(*categories.values())))
+        super().__init__(*(item for item in chain(*categories.values())))
 
         self.categories = {
             category: [getattr(self, item[0]) for item in subitems] for category, subitems in categories.items()

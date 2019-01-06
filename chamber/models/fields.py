@@ -38,7 +38,7 @@ class DecimalField(OriginDecimalField):
             kwargs['validators'].append(MinValueValidator(self.min))
         if self.max is not None:
             kwargs['validators'].append(MaxValueValidator(self.max))
-        super(DecimalField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def formfield(self, **kwargs):
         defaults = {
@@ -48,7 +48,7 @@ class DecimalField(OriginDecimalField):
             'max': self.max,
         }
         defaults.update(kwargs)
-        return super(DecimalField, self).formfield(**defaults)
+        return super().formfield(**defaults)
 
 
 class RestrictedFileValidator:
@@ -106,7 +106,7 @@ class RestrictedFileFieldMixin:
     def __init__(self, *args, **kwargs):
         max_upload_size = kwargs.pop('max_upload_size', config.CHAMBER_MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
         allowed_content_types = kwargs.pop('allowed_content_types', None)
-        super(RestrictedFileFieldMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.validators.append(RestrictedFileValidator(max_upload_size))
         if allowed_content_types:
             self.validators = tuple(self.validators) + (
@@ -120,7 +120,7 @@ class RestrictedFileFieldMixin:
         """
         from unidecode import unidecode
 
-        return super(RestrictedFileFieldMixin, self).generate_filename(instance, unidecode(force_text(filename)))
+        return super().generate_filename(instance, unidecode(force_text(filename)))
 
 
 class FileField(RestrictedFileFieldMixin, OriginFileField):
@@ -131,7 +131,7 @@ class ImageField(RestrictedFileFieldMixin, OriginImageField):
 
     def __init__(self, *args, **kwargs):
         allowed_content_types = kwargs.pop('allowed_content_types', config.CHAMBER_DEFAULT_IMAGE_ALLOWED_CONTENT_TYPES)
-        super(ImageField, self).__init__(allowed_content_types=allowed_content_types, *args, **kwargs)
+        super().__init__(allowed_content_types=allowed_content_types, *args, **kwargs)
 
 
 def generate_random_upload_path(instance, filename):
@@ -146,7 +146,7 @@ class PrevValuePositiveIntegerField(models.PositiveIntegerField):
 
     def __init__(self, *args, **kwargs):
         self.copy_field_name = kwargs.pop('copy_field_name', None)
-        super(PrevValuePositiveIntegerField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def pre_save(self, model_instance, add):
         if add or hasattr(model_instance, 'changed_fields') and self.copy_field_name in model_instance.changed_fields:
@@ -155,7 +155,7 @@ class PrevValuePositiveIntegerField(models.PositiveIntegerField):
                 getattr(model_instance, self.copy_field_name)
                 if add else model_instance.initial_values[self.copy_field_name]
             )
-        return super(PrevValuePositiveIntegerField, self).pre_save(model_instance, add)
+        return super().pre_save(model_instance, add)
 
 
 class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
@@ -168,7 +168,7 @@ class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
         assert self.enum is None or isinstance(self.enum, SubstatesChoicesNumEnum)
         if self.enum:
             kwargs['choices'] = self.enum.choices
-        super(SubchoicesPositiveIntegerField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _get_subvalue(self, model_instance):
         return getattr(model_instance, self.subchoices_field_name)
@@ -177,7 +177,7 @@ class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
         if self.enum and self._get_subvalue(model_instance) not in self.enum.categories:
             return None
         else:
-            return super(SubchoicesPositiveIntegerField, self).clean(value, model_instance)
+            return super().clean(value, model_instance)
 
     def _raise_error_if_value_should_be_empty(self, value, subvalue):
         if self.enum and subvalue not in self.enum.categories and value is not None:
@@ -207,10 +207,10 @@ class EnumSequenceFieldMixin:
         assert self.enum is None or isinstance(self.enum, SequenceChoicesEnumMixin)
         if self.enum:
             kwargs['choices'] = self.enum.choices
-        super(EnumSequenceFieldMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def validate(self, value, model_instance):
-        super(EnumSequenceFieldMixin, self).validate(value, model_instance)
+        super().validate(value, model_instance)
         if self.enum:
             prev_value = (not model_instance._state.adding and model_instance.initial_values[self.attname]) or None
             allowed_next_values = self.enum.get_allowed_next_states(prev_value, model_instance)
@@ -240,7 +240,7 @@ class PriceField(DecimalField):
             'humanized': lambda val, inst, field: price_humanized(val, inst, currency=field.currency)
         }
         default_kwargs.update(kwargs)
-        super(PriceField, self).__init__(*args, **default_kwargs)
+        super().__init__(*args, **default_kwargs)
 
     def formfield(self, **kwargs):
         default_kwargs = {
@@ -249,7 +249,7 @@ class PriceField(DecimalField):
         }
         default_kwargs.update(kwargs)
 
-        return super(PriceField, self).formfield(**default_kwargs)
+        return super().formfield(**default_kwargs)
 
 
 class PositivePriceField(PriceField):
@@ -257,9 +257,9 @@ class PositivePriceField(PriceField):
     def __init__(self, *args, **kwargs):
         kwargs['validators'] = kwargs.get('validators', [])
         kwargs['validators'].append(MinValueValidator(Decimal('0.00')))
-        super(PositivePriceField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def deconstruct(self):
-        name, path, args, kwargs = super(PositivePriceField, self).deconstruct()
+        name, path, args, kwargs = super().deconstruct()
         del kwargs['validators']
         return name, path, args, kwargs

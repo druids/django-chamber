@@ -93,11 +93,27 @@ SmartModel
 
     .. attribute:: has_changed
 
-        Returns ``True`` or ``False`` depending on whether instance was changed
+        Returns ``True`` or ``False`` depending on whether instance field values were changed
 
     .. attribute:: initial_values
 
         Returns initial values of the object from loading instance from database. It should represent actual state of the object in the database
+
+    .. attribute:: is_adding
+
+        Returns ``True`` or ``False`` depending on whether model instance will be inserting or updating in the database
+
+    .. attribute:: is_changing
+
+        Returns ``True`` or ``False`` depending on whether model instance will be updating or inserting in the database
+
+    .. attribute:: initial_values
+
+        Returns dict initial values of all instance fields that were loaded from the database. If object is not store in the database the values will be ``Unknown`` which is similar object to ``None`` value
+
+    .. attribute:: changed_fields
+
+        Returns ``ChangedFields`` instance that contains information what fields have been changed and how
 
     .. method:: clean_<field_name>()
 
@@ -127,9 +143,9 @@ SmartModel
 
         Update instance field values with values send in ``changed_fields``
 
-    .. method:: change_and_save(**changed_fields)
+    .. method:: change_and_save(update_only_changed_fields=False, **changed_fields)
 
-        Update instance field values with values send in ``changed_fields`` and finally instance is saved
+        Update instance field values with values send in ``changed_fields`` and finally instance is saved. If you want to update only changed fields in the database you can use parameter ``update_only_changed_fields`` to achieve it
 
 
 SmartMeta
@@ -172,6 +188,69 @@ SmartMeta similar like django meta is defined inside ``SmartModel`` and is acces
             is_cleaned_pre_delete = True
 
 
+Unknown
+-------
+
+``chamber.models.Unknown`` is singleton that is used for initial field values if object is not stored in the database. The purpose is distinguish ``None`` value from ``Unknown`` value because ``None`` can be stored in the database as a normal value. The ``Unknown`` behavior is same as ``None``.
+
+
+ChangedFields
+-------------
+
+``chamber.models.ChangedFields`` is dict-like class that is used for storing what fields of model instance was changed
+
+::
+
+    >>> user = User.objects.get(last_name='Gaul')
+    >>> user.last_name = 'Goul'
+    >>> 'last_name' in user.changed_fields
+    True
+    >>> 'first_name' in user.changed_fields
+    False
+    >>> user.changed_fields.has_any_key('first_name', 'last_name')
+    True
+    >>> user.changed_fields['last_name'].initial
+    'Gaul'
+    >>> user.changed_fields['last_name'].current
+    'Goul'
+    >>> user.changed_fields.keys()
+    ['last_name']
+
+.. class:: ChangedFields
+
+    .. attribute:: initial_values
+
+         Return initial values of the model instance
+
+    .. attribute:: current_values
+
+         Return current values of the model instance
+
+    .. attribute:: diff
+
+         Return only changed values of the model instance
+
+    .. method:: has_key(k)
+
+         Return if field ``k`` was changed
+
+    .. method:: has_any_key(*keys)
+
+         Return if on of the fields ``keys`` were changed
+
+    .. method:: keys()
+
+         Return all names of the changed fields
+
+    .. method:: values()
+
+         Return list of ``ValueChange`` of all changed fields. Where ``ValueChange`` is POJO object that contains field value before changed and value after change (``initial`` and ``current`` attribute)
+
+    .. method:: items()
+
+         Return dict of changed fields where key is field name and value is ``ValueChange`
+
+
 SmartQuerySet
 -------------
 
@@ -199,9 +278,9 @@ will assume the custom filters to be there).
 
             MyModel.objects.filter(pk__in=qs.values_list('pk', flat=True))
 
-    .. method:: change_and_save(**changed_fields)
+    .. method:: change_and_save(update_only_changed_fields=False, **changed_fields)
 
-        Change selected fields on the selected queryset and saves it, finnaly is returned changed objects in the queryset. Difference from update is that there is called save method on the instance, but it is slower.
+        Change selected fields on the selected queryset and saves it, finnaly is returned changed objects in the queryset. Difference from update is that there is called save method on the instance, but it is slower. If you want to update only changed fields in the database you can use parameter ``update_only_changed_fields`` to achieve it
 
 
 
