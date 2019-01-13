@@ -159,7 +159,7 @@ SmartMeta similar like django meta is defined inside ``SmartModel`` and is acces
 
         Defines if ``SmartModel`` will be automatically validated before saving. Default value is ``True``
 
-    .. attribute:: is_cleaned_pre_save
+    .. attribute:: is_cleaned_post_save
 
         Defines if ``SmartModel`` will be automatically validated after saving. Default value is ``False``
 
@@ -167,7 +167,7 @@ SmartMeta similar like django meta is defined inside ``SmartModel`` and is acces
 
         Defines if ``SmartModel`` will be automatically validated before removing. Default value is ``False``
 
-    .. attribute:: is_cleaned_pre_delete
+    .. attribute:: is_cleaned_post_delete
 
         Defines if ``SmartModel`` will be automatically validated after removing. Default value is ``False``
 
