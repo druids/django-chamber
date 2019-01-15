@@ -251,12 +251,12 @@ class SmartQuerySet(models.QuerySet):
         """
         return self.model.objects.filter(pk__in=self.values_list('pk', flat=True))
 
-    def change_and_save(self, update_only_changed_fields=False, **chaned_fields):
+    def change_and_save(self, update_only_changed_fields=False, **changed_fields):
         """
         Changes a given `changed_fields` on each object in the queryset, saves objects
         and returns the changed objects in the queryset.
         """
-        bulk_change_and_save(self, update_only_changed_fields=update_only_changed_fields, **chaned_fields)
+        bulk_change_and_save(self, update_only_changed_fields=update_only_changed_fields, **changed_fields)
         return self.filter()
 
 

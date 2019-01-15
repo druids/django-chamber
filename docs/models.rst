@@ -109,11 +109,11 @@ SmartModel
 
     .. attribute:: initial_values
 
-        Returns dict initial values of all instance fields that were loaded from the database. If object is not store in the database the values will be ``Unknown`` which is similar object to ``None`` value
+        Returns dict initial values of all instance fields that were loaded from the database. If object is not stored in the database the values will be ``Unknown`` which is similar object to ``None`` value
 
     .. attribute:: changed_fields
 
-        Returns ``ChangedFields`` instance that contains information what fields have been changed and how
+        Returns ``ChangedFields`` instance that contains information which fields have been changed and how
 
     .. method:: clean_<field_name>()
 
@@ -141,11 +141,11 @@ SmartModel
 
     .. method:: change(**changed_fields)
 
-        Update instance field values with values send in ``changed_fields``
+        Update instance field values with values sent in ``changed_fields``
 
     .. method:: change_and_save(update_only_changed_fields=False, **changed_fields)
 
-        Update instance field values with values send in ``changed_fields`` and finally instance is saved. If you want to update only changed fields in the database you can use parameter ``update_only_changed_fields`` to achieve it
+        Update instance field values with values sent in ``changed_fields`` and finally instance is saved. If you want to update only changed fields in the database you can use parameter ``update_only_changed_fields`` to achieve it
 
 
 SmartMeta
@@ -197,7 +197,7 @@ Unknown
 ChangedFields
 -------------
 
-``chamber.models.ChangedFields`` is dict-like class that is used for storing what fields of model instance was changed
+``chamber.models.ChangedFields`` is dict-like class that is used for storing which fields of model instance were changed
 
 ::
 
@@ -236,7 +236,7 @@ ChangedFields
 
     .. method:: has_any_key(*keys)
 
-         Return if on of the fields ``keys`` were changed
+         Return if any of the fields ``keys`` were changed
 
     .. method:: keys()
 
@@ -280,7 +280,7 @@ will assume the custom filters to be there).
 
     .. method:: change_and_save(update_only_changed_fields=False, **changed_fields)
 
-        Change selected fields on the selected queryset and saves it, finnaly is returned changed objects in the queryset. Difference from update is that there is called save method on the instance, but it is slower. If you want to update only changed fields in the database you can use parameter ``update_only_changed_fields`` to achieve it
+        Changes selected fields on the selected queryset and saves it and returns changed objects in the queryset. Difference from update is that there is called save method on the instance, but it is slower. If you want to update only changed fields in the database you can use parameter ``update_only_changed_fields`` to achieve it
 
 
 

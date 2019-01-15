@@ -68,7 +68,7 @@ Shortcut for ``chamber.shortcuts.filter_or_exclude_by_date`` with first paramete
 
 .. function:: chamber.shortcuts.change(obj, **changed_fields)
 
-Helper for changing model instance fields without saving. All field names are validated if really exists.
+Helper for changing model instance fields without saving. All field names are validated if really exist.
 
 ::
 
@@ -94,7 +94,7 @@ Helper for changing model instance fields with saving. If you can update only re
 
 .. function:: chamber.shortcuts.bulk_change(iterable, **changed_fields)
 
-Ganges model instances in the given iterable without saving.
+Changes model instances in the given iterable without saving.
 
 ::
     >>> users = User.objects.filter(last_name='Gaul')
@@ -106,7 +106,7 @@ Ganges model instances in the given iterable without saving.
 
 .. function:: chamber.shortcuts.bulk_change_and_save(iterable, update_only_changed_fields=False, **changed_fields)
 
-Change model iinstances in the given iterable with saving. If you can update only really changed fields you can set ``update_only_changed_fields`` to ``True``.
+Change model instances in the given iterable with saving. If you want to update only really changed fields you can set ``update_only_changed_fields`` to ``True``.
 
 ::
     >>> users = User.objects.filter(last_name='Gaul')
