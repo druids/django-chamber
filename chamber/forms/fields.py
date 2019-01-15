@@ -33,6 +33,8 @@ class PriceField(DecimalField):
 
     def __init__(self, *args, **kwargs):
         currency = kwargs.pop('currency', ugettext('CZK'))
+        kwargs.setdefault('max_digits', 10)
+        kwargs.setdefault('decimal_places', 2)
         if 'widget' not in kwargs:
             kwargs['widget'] = PriceNumberInput(currency)
         super().__init__(*args, **kwargs)

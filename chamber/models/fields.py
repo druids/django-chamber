@@ -20,7 +20,6 @@ from chamber.forms import fields as chamber_fields
 from chamber.models.humanized_helpers import price_humanized
 from chamber.utils.datastructures import SequenceChoicesEnumMixin, SubstatesChoicesNumEnum
 
-
 try:
     from sorl.thumbnail import ImageField as OriginImageField
 except ImportError:
@@ -149,11 +148,11 @@ class PrevValuePositiveIntegerField(models.PositiveIntegerField):
         super().__init__(*args, **kwargs)
 
     def pre_save(self, model_instance, add):
-        if add or hasattr(model_instance, 'changed_fields') and self.copy_field_name in model_instance.changed_fields:
+        if self.copy_field_name in model_instance.changed_fields:
             setattr(
                 model_instance, self.attname,
                 getattr(model_instance, self.copy_field_name)
-                if add else model_instance.initial_values[self.copy_field_name]
+                if model_instance.is_adding else model_instance.initial_values[self.copy_field_name]
             )
         return super().pre_save(model_instance, add)
 
@@ -164,17 +163,17 @@ class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
 
     def __init__(self, *args, **kwargs):
         self.enum = kwargs.pop('enum', None)
-        self.subchoices_field_name = kwargs.pop('subchoices_field_name', None)
+        self.supchoices_field_name = kwargs.pop('supchoices_field_name', None)
         assert self.enum is None or isinstance(self.enum, SubstatesChoicesNumEnum)
         if self.enum:
             kwargs['choices'] = self.enum.choices
         super().__init__(*args, **kwargs)
 
-    def _get_subvalue(self, model_instance):
-        return getattr(model_instance, self.subchoices_field_name)
+    def _get_supvalue(self, model_instance):
+        return getattr(model_instance, self.supchoices_field_name)
 
     def clean(self, value, model_instance):
-        if self.enum and self._get_subvalue(model_instance) not in self.enum.categories:
+        if self.enum and self._get_supvalue(model_instance) not in self.enum.categories:
             return None
         else:
             return super().clean(value, model_instance)
@@ -184,7 +183,7 @@ class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
             raise ValidationError(ugettext('Value must be empty'))
 
     def _raise_error_if_value_not_allowed(self, value, subvalue, model_instance):
-        allowed_values = self.enum.get_allowed_states(getattr(model_instance, self.subchoices_field_name))
+        allowed_values = self.enum.get_allowed_states(getattr(model_instance, self.supchoices_field_name))
         if subvalue in self.enum.categories and value not in allowed_values:
             raise ValidationError(ugettext('Allowed choices are {}.').format(
                 ', '.join(('{} ({})'.format(*(self.enum.get_label(val), val)) for val in allowed_values))
@@ -194,8 +193,8 @@ class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
         if not self.enum:
             return
 
-        self._raise_error_if_value_should_be_empty(value, self._get_subvalue(model_instance))
-        self._raise_error_if_value_not_allowed(value, self._get_subvalue(model_instance), model_instance)
+        self._raise_error_if_value_should_be_empty(value, self._get_supvalue(model_instance))
+        self._raise_error_if_value_not_allowed(value, self._get_supvalue(model_instance), model_instance)
 
 
 class EnumSequenceFieldMixin:
@@ -212,11 +211,10 @@ class EnumSequenceFieldMixin:
     def validate(self, value, model_instance):
         super().validate(value, model_instance)
         if self.enum:
-            prev_value = (not model_instance._state.adding and model_instance.initial_values[self.attname]) or None
+            prev_value = model_instance.initial_values[self.attname] if model_instance.is_changing else None
             allowed_next_values = self.enum.get_allowed_next_states(prev_value, model_instance)
-
-            if ((self.name in model_instance.changed_fields or model_instance._state.adding) and
-                value not in allowed_next_values):
+            if ((self.name in model_instance.changed_fields or model_instance.is_adding) and
+                  value not in allowed_next_values):
                 raise ValidationError(
                     ugettext('Allowed choices are {}.').format(
                         ', '.join(('{} ({})'.format(*(self.enum.get_label(val), val)) for val in allowed_next_values))))
@@ -234,22 +232,27 @@ class PriceField(DecimalField):
 
     def __init__(self, *args, **kwargs):
         self.currency = kwargs.pop('currency', ugettext('CZK'))
-        default_kwargs = {
+        super().__init__(*args, **{
             'decimal_places': 2,
             'max_digits': 10,
-            'humanized': lambda val, inst, field: price_humanized(val, inst, currency=field.currency)
-        }
-        default_kwargs.update(kwargs)
-        super().__init__(*args, **default_kwargs)
+            'humanized': lambda val, inst, field: price_humanized(val, inst, currency=field.currency),
+            **kwargs
+        })
 
     def formfield(self, **kwargs):
-        default_kwargs = {
-            'form_class': chamber_fields.PriceField,
-            'currency': self.currency,
-        }
-        default_kwargs.update(kwargs)
+        return super(DecimalField, self).formfield(
+            **{
+                'form_class': chamber_fields.PriceField,
+                'currency': self.currency,
+                **kwargs
+            }
+        )
 
-        return super().formfield(**default_kwargs)
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        del kwargs['max_digits']
+        del kwargs['decimal_places']
+        return name, path, args, kwargs
 
 
 class PositivePriceField(PriceField):

@@ -2,9 +2,13 @@ import collections
 
 from itertools import chain
 
+from distutils.version import StrictVersion
+
+import django
 from django.db import models, transaction
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
+from django.utils.functional import cached_property
 
 from chamber.exceptions import PersistenceException
 from chamber.patch import Options
@@ -267,7 +271,7 @@ class SmartModelBase(ModelBase):
 
     def __new__(cls, name, bases, attrs):
 
-        new_cls = super(SmartModelBase, cls).__new__(cls, name, bases, attrs)
+        new_cls = super().__new__(cls, name, bases, attrs)
         for dispatcher in new_cls.dispatchers:
             dispatcher.connect(new_cls)
         return new_cls
@@ -442,6 +446,18 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
 
     def refresh_from_db(self, *args, **kwargs):
         super().refresh_from_db(*args, **kwargs)
+        for key, value in self.__class__.__dict__.items():
+            if isinstance(value, cached_property):
+                self.__dict__.pop(key, None)
+        self.is_adding = False
+        self.is_changing = True
+        self.changed_fields = DynamicChangedFields(self)
+
+        if StrictVersion(django.get_version()) < StrictVersion('2.0'):
+            for field in [f for f in self._meta.get_fields() if f.is_relation]:
+                if field.get_cache_name() in self.__dict__:
+                    del self.__dict__[field.get_cache_name()]
+
         return self
 
     def change(self, **changed_fields):
