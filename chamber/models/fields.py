@@ -148,7 +148,8 @@ class PrevValuePositiveIntegerField(models.PositiveIntegerField):
         super().__init__(*args, **kwargs)
 
     def pre_save(self, model_instance, add):
-        if self.copy_field_name in model_instance.changed_fields:
+        # During migrations no changed_fields is set for a model
+        if hasattr(model_instance, 'changed_fields') and self.copy_field_name in model_instance.changed_fields:
             setattr(
                 model_instance, self.attname,
                 getattr(model_instance, self.copy_field_name)
