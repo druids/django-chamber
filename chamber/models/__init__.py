@@ -455,8 +455,11 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
 
         if StrictVersion(django.get_version()) < StrictVersion('2.0'):
             for field in [f for f in self._meta.get_fields() if f.is_relation]:
-                if field.get_cache_name() in self.__dict__:
-                    del self.__dict__[field.get_cache_name()]
+                # For Generic relation related model is None
+                # https://docs.djangoproject.com/en/2.1/ref/models/meta/#migrating-from-the-old-api
+                cache_key = field.get_cache_name() if field.related_model else field.cache_attr
+                if cache_key in self.__dict__:
+                    del self.__dict__[cache_key]
 
         return self
 
