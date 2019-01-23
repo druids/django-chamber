@@ -1,21 +1,33 @@
+from urllib.parse import urlparse
+
 from django.core.exceptions import ImproperlyConfigured
 
 
 class Domain:
 
-    def __init__(self, name, protocol, hostname, urlconf, user_model, port=None):
+    def __init__(self, name, urlconf=None, user_model=None, url=None, protocol=None, hostname=None, port=None):
         self.name = name
         self.protocol = protocol
         self.hostname = hostname
         self.urlconf = urlconf
-        if port is None and protocol == 'http':
-            self.port = 80
-        elif port is None and protocol == 'https':
-            self.port = 443
-        elif port is None:
-            raise ImproperlyConfigured('Port must be set')
-        else:
-            self.port = port
+        self.port = port
+
+        if url:
+            parsed_url = urlparse(url)
+            self.protocol, self.hostname, self.port = parsed_url.scheme, parsed_url.hostname, parsed_url.port
+
+        if self.protocol is None:
+            raise ImproperlyConfigured('protocol must be set')
+        if self.hostname is None:
+            raise ImproperlyConfigured('hostname must be set')
+
+        if self.port is None:
+            if self.protocol == 'http':
+                self.port = 80
+            elif self.protocol == 'https':
+                self.port = 443
+            else:
+                raise ImproperlyConfigured('port must be set')
         self.user_model = user_model
 
     @property
