@@ -48,8 +48,14 @@ BACKEND_SITE_ID = 1
 FRONTEND_SITE_ID = 2
 
 DOMAINS = {
-    BACKEND_SITE_ID: Domain('backend', 'http', 'localhost', 'dj.backend_urls', 'test_chamber.BackendUser', 8000),
-    FRONTEND_SITE_ID: Domain('frontend', 'https', 'localhost', 'dj.frontend_urls', 'test_chamber.FrontendUser'),
+    BACKEND_SITE_ID: Domain(
+        name='backend', protocol='http', hostname='localhost', urlconf='dj.backend_urls',
+        user_model='test_chamber.BackendUser', port=8000
+    ),
+    FRONTEND_SITE_ID: Domain(
+        name='frontend', protocol='https', hostname='localhost', urlconf='dj.frontend_urls',
+        user_model='test_chamber.FrontendUser'
+    ),
 }
 
 # If you set this to False, Django will make some optimizations so as not

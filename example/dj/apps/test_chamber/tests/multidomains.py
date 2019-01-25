@@ -40,21 +40,29 @@ class MultidomainsTestCase(TestCase):
         assert_equal(get_domain(settings.FRONTEND_SITE_ID).url, 'https://localhost')
 
     def test_new_domain_port(self):
-        assert_equal(Domain('testA', 'http', 'localhost', 'dj.backend_urls', 'test_chamber.BackendUser').port, 80)
-        assert_equal(Domain('testB', 'https', 'localhost', 'dj.backend_urls', 'test_chamber.BackendUser').port, 443)
-        assert_equal(Domain('testC', 'http', 'localhost', 'dj.backend_urls', 'test_chamber.BackendUser', 443).port, 443)
-        assert_equal(Domain('testD', 'https', 'localhost', 'dj.backend_urls', 'test_chamber.BackendUser', 80).port, 80)
-        assert_raises(ImproperlyConfigured, Domain, 'testF', 'hbbs', 'localhost', 'dj.backend_urls',
-                      'test_chamber.BackendUser')
+        assert_equal(Domain('testA', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            protocol='http', hostname='localhost').port, 80)
+        assert_equal(Domain('testB', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            protocol='https', hostname='localhost').port, 443)
+        assert_equal(Domain('testC', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            protocol='http', hostname='localhost', port=443).port, 443)
+        assert_equal(Domain('testD', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            protocol='https', hostname='localhost', port=80).port, 80)
+        assert_raises(ImproperlyConfigured, Domain, 'testF', 'dj.backend_urls', 'test_chamber.BackendUser',
+                      protocol='hbbs', hostname='localhost')
+        assert_equal(Domain('testD', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            url='https://localhost:80').port, 80)
+        assert_equal(Domain('testD', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            url='https://localhost').port, 443)
 
-        assert_equal(Domain('testA', 'http', 'localhost', 'dj.backend_urls', 'test_chamber.BackendUser').url,
-                     'http://localhost')
-        assert_equal(Domain('testB', 'https', 'localhost', 'dj.backend_urls', 'test_chamber.BackendUser').url,
-                     'https://localhost')
-        assert_equal(Domain('testC', 'http', 'localhost', 'dj.backend_urls', 'test_chamber.BackendUser', 443).url,
-                     'http://localhost:443')
-        assert_equal(Domain('testD', 'https', 'localhost', 'dj.backend_urls', 'test_chamber.BackendUser', 80).url,
-                     'https://localhost:80')
+        assert_equal(Domain('testA', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            protocol='http', hostname='localhost').url, 'http://localhost')
+        assert_equal(Domain('testB', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            protocol='https', hostname='localhost').url, 'https://localhost')
+        assert_equal(Domain('testC', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            protocol='http', hostname='localhost', port=443).url, 'http://localhost:443')
+        assert_equal(Domain('testD', 'dj.backend_urls', 'test_chamber.BackendUser',
+                            protocol='https', hostname='localhost', port=80).url, 'https://localhost:80')
 
     def test_reverse(self):
         assert_equal(reverse('current-datetime'), '/current_time_backend/')
