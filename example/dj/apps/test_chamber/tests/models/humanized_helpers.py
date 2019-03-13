@@ -2,7 +2,7 @@ from django.test import TestCase
 
 from chamber.models.humanized_helpers import price_humanized
 
-from germanium.anotations import data_provider  # pylint: disable=E0401
+from germanium.decorators import data_provider  # pylint: disable=E0401
 from germanium.tools import assert_equal  # pylint: disable=E0401
 
 

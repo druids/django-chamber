@@ -1,6 +1,11 @@
 from django import forms
 from django.utils.translation import ugettext
 
+from chamber import config
+
+from .validators import (
+    RestrictedFileValidator, AllowedContentTypesByFilenameFileValidator, AllowedContentTypesByContentFileValidator
+)
 
 class DecimalField(forms.DecimalField):
 
@@ -38,3 +43,20 @@ class PriceField(DecimalField):
         if 'widget' not in kwargs:
             kwargs['widget'] = PriceNumberInput(currency)
         super().__init__(*args, **kwargs)
+
+
+class RestrictedFileField(forms.FileField):
+
+    def __init__(self, *args, **kwargs):
+        max_upload_size = kwargs.pop('max_upload_size', config.CHAMBER_MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
+        allowed_content_types = kwargs.pop('allowed_content_types', None)
+
+        validators = tuple(kwargs.pop('validators', [])) + (
+            RestrictedFileValidator(max_upload_size),
+        )
+        if allowed_content_types:
+            validators += (
+                AllowedContentTypesByFilenameFileValidator(allowed_content_types),
+                AllowedContentTypesByContentFileValidator(allowed_content_types),
+            )
+        super().__init__(validators=validators, *args, **kwargs)

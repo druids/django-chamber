@@ -8,7 +8,7 @@ from chamber.forms import fields as form_fields
 from chamber.models.fields import generate_random_upload_path
 from chamber.shortcuts import change_and_save
 
-from germanium.anotations import data_provider
+from germanium.decorators import data_provider
 from germanium.tools import assert_equal, assert_is_none, assert_false, assert_is_not_none, assert_raises, assert_true
 
 from test_chamber.models import CSVRecord, TestFieldsModel  # pylint: disable=E0401
