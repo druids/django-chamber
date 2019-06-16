@@ -1,10 +1,26 @@
-from django.contrib.auth.backends import ModelBackend as OridginModelBackend
+from django.contrib.auth.backends import ModelBackend as OriginModelBackend
 from django.contrib.auth.models import Permission
 
 from chamber.multidomains.domain import get_user_class
 
+from auth_token.backends import DeviceBackend as OriginDeviceBackend
 
-class ModelBackend(OridginModelBackend):
+
+class GetUserMixin:
+
+    def get_user(self, user_id):
+        UserModel = get_user_class()
+        try:
+            return UserModel._default_manager.get(pk=user_id)
+        except UserModel.DoesNotExist:
+            return None
+
+
+class DeviceBackend(GetUserMixin, OriginDeviceBackend):
+    pass
+
+
+class ModelBackend(GetUserMixin, OriginModelBackend):
     """
     Authenticates against settings.AUTH_USER_MODEL.
     """
@@ -39,10 +55,3 @@ class ModelBackend(OridginModelBackend):
             perms = perms.values_list('content_type__app_label', 'codename').order_by()
             user_obj._group_perm_cache = set(["%s.%s" % (ct, name) for ct, name in perms])  # pylint: disable=W0212
         return user_obj._group_perm_cache  # pylint: disable=W0212
-
-    def get_user(self, user_id):
-        UserModel = get_user_class()
-        try:
-            return UserModel._default_manager.get(pk=user_id)
-        except UserModel.DoesNotExist:
-            return None
