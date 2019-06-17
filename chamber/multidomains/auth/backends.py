@@ -3,8 +3,6 @@ from django.contrib.auth.models import Permission
 
 from chamber.multidomains.domain import get_user_class
 
-from auth_token.backends import DeviceBackend as OriginDeviceBackend
-
 
 class GetUserMixin:
 
@@ -14,10 +12,6 @@ class GetUserMixin:
             return UserModel._default_manager.get(pk=user_id)
         except UserModel.DoesNotExist:
             return None
-
-
-class DeviceBackend(GetUserMixin, OriginDeviceBackend):
-    pass
 
 
 class ModelBackend(GetUserMixin, OriginModelBackend):
