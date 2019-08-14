@@ -1,6 +1,5 @@
 import csv
 import io
-import os
 
 from django.conf import settings
 
@@ -13,12 +12,10 @@ except ImportError:
     from itertools import izip_longest as zip_longest
 
 
-def simple_count(filename, encoding):
-    # Encoding must be passed to match encoding used in the importer.
+def simple_count(file):
     lines = 0
-    with io.open(filename, encoding=encoding) as f:
-        for _ in f:
-            lines += 1
+    for _ in file:
+        lines += 1
     return lines
 
 
@@ -43,19 +40,28 @@ class AbstractCSVImporter:
     delimiter = ';'
     encoding = 'utf-8'
 
-    def __call__(self, csv_path):
-        """csv_path is a required parameter as calling the function without CSV does not make sense"""
-        self.import_csv(custom_csv_path=csv_path)
+    def __call__(self, file):
+        """file is a required parameter as calling the function without CSV file does not make sense"""
+        self.import_csv(file)
 
-    def import_csv(self, custom_csv_path=None):
-        with io.open(self.get_filename(custom_csv_path=custom_csv_path), encoding=self.get_encoding()) as f:
-            reader = csv.reader(f, delimiter=self.get_delimiter())
-            if self.get_skip_header():
-                next(reader, None)
-            self.import_rows(
-                reader,
-                row_count=simple_count(self.get_filename(custom_csv_path=custom_csv_path), encoding=self.get_encoding())
-            )
+    def import_csv(self, file=None):
+        if not file:
+            with open(self.csv_path, encoding=self.get_encoding()) as file:
+                self._import_csv(file)
+        else:
+            self._import_csv(file)
+
+    def _import_csv(self, file):
+        reader = csv.reader(file, delimiter=self.get_delimiter())
+        row_count = simple_count(file)
+        file.seek(0)
+        if self.get_skip_header():
+            next(reader, None)
+            row_count -= 1
+        self.import_rows(
+            reader,
+            row_count=row_count,
+        )
 
     def import_rows(self, reader, row_count=0):
         raise NotImplementedError
@@ -67,13 +73,6 @@ class AbstractCSVImporter:
         Override this property if you want to direct output somewhere, e.g. in Django commands.
         """
         return DummyOutputStream()
-
-    def get_filename(self, custom_csv_path=None):
-        return os.path.join(settings.PROJECT_DIR, custom_csv_path or self.get_csv_path())
-
-    def get_csv_path(self):
-        """Override this in case you need to set the CSV path dynamically."""
-        return self.csv_path
 
     def get_encoding(self):
         return self.encoding
