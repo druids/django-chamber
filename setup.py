@@ -31,4 +31,7 @@ setup(
         'six>=1.10.0',
         'filemagic>=1.6',
     ],
+    extras_require={
+        'boto3storage': ['django-storages<2.0', 'boto3'],
+    },
 )
