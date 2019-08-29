@@ -21,7 +21,8 @@ class ImporterTestCase(TestCase):
 
     def test_records_should_be_imported_without_optional_fields_should_be_bulk_imported_from_csv(self):
         assert_equal(CSVRecord.objects.count(), 0)
-        CSVRecordImporter().import_csv(custom_csv_path='data/required_fields_filled.csv')
+        with open('data/required_fields_filled.csv') as f:
+            CSVRecordImporter().import_csv(f)
         assert_equal(CSVRecord.objects.count(), 5)
 
     def test_records_should_be_imported_from_csv(self):
@@ -34,7 +35,8 @@ class ImporterTestCase(TestCase):
 
     def test_records_should_be_imported_without_optional_fields_should_be_imported_from_csv(self):
         assert_equal(CSVRecord.objects.count(), 0)
-        CSVRecordImporter().import_csv(custom_csv_path='data/required_fields_filled.csv')
+        with open('data/required_fields_filled.csv') as f:
+            CSVRecordImporter().import_csv(f)
         assert_equal(CSVRecord.objects.count(), 5)
 
     def test_records_should_be_bulk_imported_from_csv_with_command(self):
