@@ -25,10 +25,10 @@ setup(
         'Framework :: Django',
     ],
     install_requires=[
-        'Django>=1.8',
-        'Unidecode>=0.04.17',
-        'pyprind>=2.11.0',
-        'six>=1.10.0',
+        'Django>=1.11',
+        'Unidecode>=1.1.1',
+        'pyprind>=2.11.2',
+        'six>=1.12.0',
         'filemagic>=1.6',
     ],
     extras_require={
