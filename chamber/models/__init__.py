@@ -245,7 +245,7 @@ class Signal:
         [fun(self.obj) for fun in self.connected_functions]
 
 
-class SmartQuerySet(models.QuerySet):
+class SmartQuerySetMixin:
 
     def fast_distinct(self):
         """
@@ -262,6 +262,10 @@ class SmartQuerySet(models.QuerySet):
         """
         bulk_change_and_save(self, update_only_changed_fields=update_only_changed_fields, **changed_fields)
         return self.filter()
+
+
+class SmartQuerySet(SmartQuerySetMixin, models.QuerySet):
+    pass
 
 
 class SmartModelBase(ModelBase):
