@@ -1,6 +1,9 @@
 import inspect
 import unicodedata
 
+from importlib import import_module
+
+from django.apps import AppConfig
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.safestring import SafeData, mark_safe
@@ -49,3 +52,17 @@ def call_method_with_unknown_input(method, **fun_kwargs):
         return method(**method_kwargs)
     else:
         raise RuntimeError('Invalid method parameters')
+
+
+def generate_container_app_config(name,):
+    name_prefix, _, app_name = name.split('.')
+
+    label = '{}_{}'.format(name_prefix, app_name)
+    cls_name = '{}{}AppConfig'.format(name_prefix.title(), app_name.title())
+
+    cls = type(cls_name, (AppConfig,), {'name': name, 'label': label})
+
+    return cls(name, import_module(cls.name))
+
+
+ContainerAppConfig = generate_container_app_config
