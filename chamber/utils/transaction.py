@@ -125,7 +125,20 @@ def atomic_with_signals(func):
         return transaction.atomic(transaction_signals(func))
 
 
-class OnSuccessHandler:
+class BaseHandlerMixin:
+
+    def __call__(self):
+        self.handle(**self.kwargs)
+
+    def handle(self, **kwargs):
+        """
+        There should be implemented handler operations.
+        :param kwargs: input data that was send during handler creation.
+        """
+        raise NotImplementedError
+
+
+class OnSuccessHandler(BaseHandlerMixin):
     """
     Handler class that is used for performing on success operations.
     """
@@ -136,28 +149,24 @@ class OnSuccessHandler:
         self.kwargs = kwargs
         on_success(self, using=using)
 
-    def __call__(self):
-        self.handle(**self.kwargs)
 
-    def handle(self, **kwargs):
-        """
-        There should be implemented handler operations.
-        :param kwargs: input data that was send during hanlder creation.
-        """
-        raise NotImplementedError
-
-
-class OneTimeOnSuccessHandler(OnSuccessHandler):
+class InstantHandler(BaseHandlerMixin):
     """
-    One time handler class that is used for performing on success operations.
+    Handler class that is used for performing immediately.
+    """
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self()
+
+
+class OneTimeHandlerMixin:
+    """
+    One time handler mixin that is used for performing on success operations.
     Handler is called only once, but data of all calls are stored inside list (kwargs_list).
     """
 
     is_unique = True
-
-    def __init__(self, using=None, **kwargs):
-        self.kwargs_list = (kwargs,)
-        on_success(self, using=using)
 
     def join(self, handler):
         """
@@ -182,10 +191,27 @@ class OneTimeOnSuccessHandler(OnSuccessHandler):
         raise NotImplementedError
 
 
-class InstanceOneTimeOnSuccessHandler(OneTimeOnSuccessHandler):
+class OneTimeOnSuccessHandler(OneTimeHandlerMixin, OnSuccessHandler):
     """
-    Use this class to create handler that will be unique per instance and will be called only once per instance.
+    One time handler class that is used for performing on success operations.
+    Handler is called only once, but data of all calls are stored inside list (kwargs_list).
     """
+    def __init__(self, using=None, **kwargs):
+        self.kwargs_list = (kwargs,)
+        on_success(self, using=using)
+
+
+class OneTimeInstantHandler(OneTimeHandlerMixin, InstantHandler):
+    """
+    One time handler class that is used for performing immediately.
+    Handler is called only once, but data of all calls are stored inside list (kwargs_list).
+    """
+    def __init__(self, using=None, **kwargs):
+        self.kwargs_list = (kwargs,)
+        self()
+
+
+class InstanceHandlerMixin:
 
     def _get_instance(self):
         instance = self.kwargs_list[0]['instance']
@@ -194,3 +220,18 @@ class InstanceOneTimeOnSuccessHandler(OneTimeOnSuccessHandler):
     def _get_unique_id(self):
         instance = self.kwargs_list[0]['instance']
         return hash((instance.__class__, instance.pk))
+
+
+class InstanceOneTimeOnSuccessHandler(InstanceHandlerMixin, OneTimeOnSuccessHandler):
+    """
+    Use this class to create handler that will be unique per instance and will be called only once per instance.
+    """
+    pass
+
+
+class InstanceOneTimeInstantHandler(InstanceHandlerMixin, OneTimeInstantHandler):
+    """
+    Use this class to create handler that will be unique per instance and will be called only once per instance
+    immediately.
+    """
+    pass
