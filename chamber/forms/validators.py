@@ -44,9 +44,10 @@ class AllowedContentTypesByContentFileValidator:
         self.content_types = content_types
 
     def __call__(self, data):
+        data.open()
         with magic.Magic(flags=magic.MAGIC_MIME_TYPE) as m:
-            mime_type = m.id_buffer(data.file.read(1024))
-            data.file.seek(0)
+            mime_type = m.id_buffer(data.read(1024))
+            data.seek(0)
             if mime_type not in self.content_types:
                 raise ValidationError(ugettext('File content was evaluated as not supported file type'))
 
