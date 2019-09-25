@@ -13,7 +13,7 @@ SETTINGS = settings
 DJANGO_SETTINGS_MODULE = $(DJANGO_DIR).settings.$(SETTINGS)
 DJANGO_POSTFIX = --settings=$(DJANGO_SETTINGS_MODULE) --pythonpath=$(PYTHONPATH)
 PYTHON_BIN = $(VIRTUAL_ENV)/bin
-PYTHON = python3.6
+PYTHON = python3.7
 PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,$(shell python --version 2>&1)))
 PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL}).$(word 2,${PYTHON_VERSION_FULL})
 TYPE = dev

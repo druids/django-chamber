@@ -1,12 +1,10 @@
+import types
+
 from collections import defaultdict
 
 from django.core.exceptions import ImproperlyConfigured
 
-from chamber.utils.transaction import (
-    on_success, OnSuccessHandler, OneTimeOnSuccessHandler, InstanceOneTimeOnSuccessHandler
-)
-
-from .signals import dispatcher_post_save
+from .handlers import BaseHandler
 
 
 class BaseDispatcher:
@@ -17,13 +15,12 @@ class BaseDispatcher:
 
     signal = None
 
-    def _validate_init_params(self):
-        if not callable(self.handler):
-            raise ImproperlyConfigured('Registered handler must be a callable.')
-
     def __init__(self, handler, signal=None):
         self.handler = handler
-        self._validate_init_params()
+        assert (isinstance(handler, types.FunctionType)
+                or isinstance(handler, BaseHandler)), 'Handler must be function or instance of ' \
+                                                      'chamber.models.handlers.BaseHandler, {}: {}'.format(self,
+                                                                                                           handler)
         self._connected = defaultdict(list)
         self._signal = signal if signal is not None else self.signal
 

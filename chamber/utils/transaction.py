@@ -25,39 +25,39 @@ def atomic(func):
 
 class TransactionSignalsContext:
     """
-    Context object that stores handlers and call it after successful pass trough surrounded code block
-    with "transaction_signals decorator. Handlers can be unique or standard. Unique handlers are registered
+    Context object that stores callable and call it after successful pass trough surrounded code block
+    with "transaction_signals decorator. Handlers can be unique or standard. Unique callable are registered
     and executed only once.
     """
 
     def __init__(self):
-        self._unique_handlers = OrderedDict()
-        self._handlers = []
+        self._unique_callable = OrderedDict()
+        self._callable_list = []
 
-    def register(self, handler):
-        if getattr(handler, 'is_unique', False):
-            if hash(handler) in self._unique_handlers:
-                self._unique_handlers.get(hash(handler)).join(handler)
+    def register(self, callable):
+        if isinstance(callable, UniqueOnSuccessCallable):
+            if hash(callable) in self._unique_callable:
+                self._unique_callable.get(hash(callable)).join(callable)
             else:
-                self._unique_handlers[hash(handler)] = handler
-                self._handlers.append(handler)
+                self._unique_callable[hash(callable)] = callable
+                self._callable_list.append(callable)
         else:
-            self._handlers.append(handler)
+            self._callable_list.append(callable)
 
     def handle_all(self):
-        for handler in self._handlers:
-            handler()
+        for callable in self._callable_list:
+            callable()
 
     def join(self, transaction_signals_context):
-        for handler in transaction_signals_context._handlers:
-            self.register(handler)
+        for callable in transaction_signals_context._callable_list:
+            self.register(callable)
 
 
 class TransactionSignals(ContextDecorator):
     """
     Context decorator that supports usage python keyword "with".
     Decorator that adds transaction context to the connection on input.
-    Finally handlers are called on the output.
+    Finally callables are called on the output.
     """
 
     def __init__(self, using):
@@ -81,30 +81,30 @@ class TransactionSignals(ContextDecorator):
                 connection.transaction_signals_context_list[-1].join(transaction_signals_context)
 
 
-def on_success(handler, using=None):
+def on_success(callable, using=None):
     """
-    Register a handler or a function to be called after successful code pass.
-    If transaction signals are not active the handler/function is called immediately.
-    :param handler: handler or function that will be called.
+    Register a callable or a function to be called after successful code pass.
+    If transaction signals are not active the callable/function is called immediately.
+    :param callable: callable or function that will be called.
     :param using: name of the database
     """
 
     connection = get_connection(using)
     if getattr(connection, 'transaction_signals_context_list', False):
-        connection.transaction_signals_context_list[-1].register(handler)
+        connection.transaction_signals_context_list[-1].register(callable)
     else:
         if settings.DEBUG:
             logger.warning(
                 'For on success signal should be activated transaction signals via transaction_signals decorator.'
                 'Function is called immediately now.'
             )
-        handler()
+        callable()
 
 
 def transaction_signals(using=None):
     """
     Decorator that adds transaction context to the connection on input.
-    Finally handlers are called on the output.
+    Finally callable are called on the output.
     :param using: name of the database
     """
     if callable(using):
@@ -125,49 +125,27 @@ def atomic_with_signals(func):
         return transaction.atomic(transaction_signals(func))
 
 
-class OnSuccessHandler:
+class UniqueOnSuccessCallable:
     """
-    Handler class that is used for performing on success operations.
-    """
-
-    is_unique = False
-
-    def __init__(self, using=None, **kwargs):
-        self.kwargs = kwargs
-        on_success(self, using=using)
-
-    def __call__(self):
-        self.handle(**self.kwargs)
-
-    def handle(self, **kwargs):
-        """
-        There should be implemented handler operations.
-        :param kwargs: input data that was send during hanlder creation.
-        """
-        raise NotImplementedError
-
-
-class OneTimeOnSuccessHandler(OnSuccessHandler):
-    """
-    One time handler class that is used for performing on success operations.
-    Handler is called only once, but data of all calls are stored inside list (kwargs_list).
+    One time callable class that is used for performing on success operations.
+    Handler is callable only once, but data of all calls are stored inside list (kwargs_list).
     """
 
-    is_unique = True
-
-    def __init__(self, using=None, **kwargs):
+    def __init__(self, **kwargs):
         self.kwargs_list = (kwargs,)
-        on_success(self, using=using)
 
-    def join(self, handler):
+    def join(self, callable):
         """
-        Joins two unique handlers.
+        Joins two unique callable.
         """
-        self.kwargs_list += handler.kwargs_list
+        self.kwargs_list += callable.kwargs_list
 
     def _get_unique_id(self):
         """
-        Unique handler must be identified with some was
+        Callable instance hash is generated from class name and the return value of this method.
+        The method returns None by default, therefore the class init data doesn't have impact.
+        You should implement this method to distinguish callable according to its
+        input data (for example Django model instance)
         :return:
         """
         return None
@@ -175,22 +153,11 @@ class OneTimeOnSuccessHandler(OnSuccessHandler):
     def __hash__(self):
         return hash((self.__class__, self._get_unique_id()))
 
+    def _get_kwargs(self):
+        return self.kwargs_list[-1]
+
     def __call__(self):
-        self.handle(self.kwargs_list)
+        self.handle()
 
-    def handle(self, kwargs_list):
+    def handle(self):
         raise NotImplementedError
-
-
-class InstanceOneTimeOnSuccessHandler(OneTimeOnSuccessHandler):
-    """
-    Use this class to create handler that will be unique per instance and will be called only once per instance.
-    """
-
-    def _get_instance(self):
-        instance = self.kwargs_list[0]['instance']
-        return instance.__class__.objects.get(pk=instance.pk)
-
-    def _get_unique_id(self):
-        instance = self.kwargs_list[0]['instance']
-        return hash((instance.__class__, instance.pk))
