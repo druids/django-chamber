@@ -32,7 +32,7 @@ When the handler is fired, it is passed a single argument -- the instance of the
 
 ::
 
-    def send_email(user):
+    def send_email(user, **kwargs):
         # Code that actually sends the e-mail
         send_html_email(recipient=user.email, subject='Your profile was updated')
 
@@ -70,7 +70,7 @@ be dispatched during the ``_pre_save`` method when the state changes to
 
 .. code:: python
 
-    def my_handler(my_smart_model): # Do that useful stuff
+    def my_handler(instance, **kwargs): # Do that useful stuff
         pass
 
     class MySmartModel(chamber\_models.SmartModel):
@@ -84,3 +84,67 @@ be dispatched during the ``_pre_save`` method when the state changes to
         dispatchers = (
             StateDispatcher(my_handler, STATE, state, STATE.SECOND, signal=dispatcher_pre_save),
         )
+
+
+Model Handlers
+==============
+
+Dispatchers can be used with function but for more complex situations instance
+of ``chamber.models.handlers.BaseHandler`` can be used instead of function.
+
+.. code:: python
+
+    class MyHandler(BaseHandler):
+        def handle(self, instance, **kwargs): # Do that useful stuff
+            pass
+
+    class MySmartModel(chamber\_models.SmartModel):
+
+        STATE = ChoicesNumEnum(
+            ('FIRST', _('first'), 1),
+            ('SECOND', _('second'), 2),
+        )
+        state = models.IntegerField(choices=STATE.choices, default=STATE.FIRST)
+
+        dispatchers = (
+            StateDispatcher(MyHandler(), STATE, state, STATE.SECOND, signal=dispatcher_pre_save),
+        )
+
+Moreover handler can also serve as a dispatcher.
+
+    class MyHandler(BaseHandler):
+        def handle(self, instance, **kwargs): # Do that useful stuff
+            pass
+
+        def can_handle(self, instance, **kwargs):
+            return ...  # Define if handler will be called
+
+    class MySmartModel(chamber\_models.SmartModel):
+
+        STATE = ChoicesNumEnum(
+            ('FIRST', _('first'), 1),
+            ('SECOND', _('second'), 2),
+        )
+        state = models.IntegerField(choices=STATE.choices, default=STATE.FIRST)
+
+        dispatchers = (
+            MyHandler(signal=dispatcher_pre_save),
+        )
+
+There are two special types of handlers ``chamber.models.handlers.OnSuccessHandler``
+and  ``chamber.models.handlers.InstanceOneTimeOnSuccessHandler``.
+
+.. class:: chamber.models.dispatchers.OnSuccessHandler
+
+The handler uses ``chamber.utils.transaction.on_success`` to handle itself only if transaction is successful.
+In most cases the handler will be used with ``dispatcher_post_save`` signal therefore ``dispatcher_post_save``
+is default.
+
+.. class:: chamber.models.dispatchers.InstanceOneTimeOnSuccessHandler
+
+Descendant of the ``hamber.models.dispatchers.OnSuccessHandler`` with the difference that is called only one
+per model instance.
+
+WARNING: Be carefull using ``chamber.models.handlers.OnSuccessHandler``and
+``chamber.models.handlers.InstanceOneTimeOnSuccessHandler``. Handlers should not invoke another handlers or code which
+uses ``chamber.utils.transaction.on_success`` because the code will not be invoked.

@@ -1,3 +1,6 @@
+from chamber.models.handlers import InstanceOneTimeOnSuccessHandler
+
+
 def create_test_smart_model_handler(instance, **kwargs):
     from .models import TestSmartModel  # NOQA
 
@@ -20,3 +23,14 @@ def create_csv_record_handler(instance, **kwargs):
     from .models import CSVRecord  # NOQA
 
     CSVRecord.objects.create()
+
+
+class OneTimeStateChangedHandler(InstanceOneTimeOnSuccessHandler):
+
+    def can_handle(self, instance, **kwargs):
+        return 'state' in instance.changed_fields
+
+    def handle(self, instance, **kwargs):
+        from .models import TestOnDispatchModel
+
+        TestOnDispatchModel.objects.create()

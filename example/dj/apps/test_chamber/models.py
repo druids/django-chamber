@@ -8,8 +8,10 @@ from chamber.models.dispatchers import CreatedDispatcher, PropertyDispatcher, St
 from chamber.models.signals import dispatcher_pre_save, dispatcher_post_save
 from chamber.utils.datastructures import ChoicesNumEnum, SequenceChoicesNumEnum, SubstatesChoicesNumEnum
 
-from .handlers import (create_test_dispatchers_model_handler, create_test_fields_model_handler,
-                       create_test_smart_model_handler, create_csv_record_handler)
+from .handlers import (
+    create_test_dispatchers_model_handler, create_test_fields_model_handler, create_test_smart_model_handler,
+    create_csv_record_handler, OneTimeStateChangedHandler
+)
 
 
 class ShortcutsModel(models.Model):
@@ -103,6 +105,7 @@ class TestDispatchersModel(chamber_models.SmartModel):
         StateDispatcher(create_test_smart_model_handler, STATE, state, STATE.SECOND, signal=dispatcher_pre_save),
         PropertyDispatcher(create_test_fields_model_handler, 'always_dispatch', signal=dispatcher_post_save),
         PropertyDispatcher(create_test_dispatchers_model_handler, 'never_dispatch', signal=dispatcher_post_save),
+        OneTimeStateChangedHandler(),
     )
 
     @property
@@ -112,3 +115,7 @@ class TestDispatchersModel(chamber_models.SmartModel):
     @property
     def never_dispatch(self):
         return False
+
+
+class TestOnDispatchModel(chamber_models.SmartModel):
+    pass
