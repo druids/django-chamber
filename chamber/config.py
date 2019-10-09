@@ -1,8 +1,22 @@
-from django.conf import settings
+from django.conf import settings as django_settings
 
 
-CHAMBER_MAX_FILE_UPLOAD_SIZE = getattr(settings, 'CHAMBER_MAX_FILE_UPLOAD_SIZE', 20)
-CHAMBER_MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME = getattr(settings, 'CHAMBER_MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME',
-                                                          None)
-CHAMBER_DEFAULT_IMAGE_ALLOWED_CONTENT_TYPES = getattr(settings, 'CHAMBER_DEFAULT_IMAGE_ALLOWED_CONTENT_TYPES',
-                                                      {'image/jpeg', 'image/png', 'image/gif'})
+DEFAULTS = {
+    'MAX_FILE_UPLOAD_SIZE': 20,
+    'MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME': None,
+    'DEFAULT_IMAGE_ALLOWED_CONTENT_TYPES': {'image/jpeg', 'image/png', 'image/gif'},
+    'PRIVATE_S3_STORAGE_URL_EXPIRATION': 3600,
+}
+
+
+class Settings:
+
+    def __getattr__(self, attr):
+        if attr not in DEFAULTS:
+            raise AttributeError('Invalid CHAMBER setting: "{}"'.format(attr))
+
+        default = DEFAULTS[attr]
+        return getattr(django_settings, 'CHAMBER_{}'.format(attr), default(self) if callable(default) else default)
+
+
+settings = Settings()

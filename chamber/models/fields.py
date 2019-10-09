@@ -7,11 +7,10 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import FileField as OriginFileField
 from django.db.models.fields import DecimalField as OriginDecimalField
-from django.forms import forms
 from django.utils.encoding import force_text
 from django.utils.translation import ugettext
 
-from chamber import config
+from chamber.config import settings
 from chamber.forms import fields as chamber_fields
 from chamber.forms.validators import (
     RestrictedFileValidator, AllowedContentTypesByFilenameFileValidator, AllowedContentTypesByContentFileValidator
@@ -56,7 +55,7 @@ class RestrictedFileFieldMixin:
         * max_upload_size - a number indicating the maximum file size allowed for upload in MB.
     """
     def __init__(self, *args, **kwargs):
-        max_upload_size = kwargs.pop('max_upload_size', config.CHAMBER_MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
+        max_upload_size = kwargs.pop('max_upload_size', settings.MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
         allowed_content_types = kwargs.pop('allowed_content_types', None)
         super().__init__(*args, **kwargs)
         self.validators.append(RestrictedFileValidator(max_upload_size))
@@ -82,7 +81,7 @@ class FileField(RestrictedFileFieldMixin, OriginFileField):
 class ImageField(RestrictedFileFieldMixin, OriginImageField):
 
     def __init__(self, *args, **kwargs):
-        allowed_content_types = kwargs.pop('allowed_content_types', config.CHAMBER_DEFAULT_IMAGE_ALLOWED_CONTENT_TYPES)
+        allowed_content_types = kwargs.pop('allowed_content_types', settings.DEFAULT_IMAGE_ALLOWED_CONTENT_TYPES)
         super().__init__(allowed_content_types=allowed_content_types, *args, **kwargs)
 
 
