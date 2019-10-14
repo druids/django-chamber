@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.translation import ugettext
 
-from chamber import config
+from chamber.config import settings
 
 from .validators import (
     RestrictedFileValidator, AllowedContentTypesByFilenameFileValidator, AllowedContentTypesByContentFileValidator
@@ -48,7 +48,7 @@ class PriceField(DecimalField):
 class RestrictedFileField(forms.FileField):
 
     def __init__(self, *args, **kwargs):
-        max_upload_size = kwargs.pop('max_upload_size', config.CHAMBER_MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
+        max_upload_size = kwargs.pop('max_upload_size', settings.MAX_FILE_UPLOAD_SIZE) * 1024 * 1024
         allowed_content_types = kwargs.pop('allowed_content_types', None)
 
         validators = tuple(kwargs.pop('validators', [])) + (
