@@ -6,6 +6,7 @@ DEFAULTS = {
     'MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME': None,
     'DEFAULT_IMAGE_ALLOWED_CONTENT_TYPES': {'image/jpeg', 'image/png', 'image/gif'},
     'PRIVATE_S3_STORAGE_URL_EXPIRATION': 3600,
+    'AWS_S3_ON': getattr(django_settings, 'AWS_S3_ON', False),
 }
 
 
