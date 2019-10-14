@@ -15,8 +15,8 @@ def get_token(request):
     Returns the token model instance associated with the given request token key.
     If no user is retrieved AnonymousToken is returned.
     """
-    if (not request.META.get(header_name_to_django(auth_token_settings.HEADER_NAME)) and
-            config.CHAMBER_MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME):
+    if (not request.META.get(header_name_to_django(auth_token_settings.HEADER_NAME))
+            and settings.MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME):
         ovetaker_auth_token = request.COOKIES.get(settings.MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME)
         token = get_object_or_none(Token, key=ovetaker_auth_token, is_active=True)
         if utils.get_user_from_token(token).is_authenticated():
