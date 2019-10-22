@@ -69,7 +69,7 @@ class BasePrivateS3Storage(BaseS3Storage):
         return url
 
 
-class BasePrivateS3DataStorage(S3Boto3Storage):
+class BasePrivateS3DataStorage(BaseS3Storage):
 
     def url(self, name):
         raise RuntimeError('You cannot generate data storage URL')
