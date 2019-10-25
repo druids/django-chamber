@@ -9,6 +9,7 @@ from django.db import models, transaction
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import cached_property
+from django.utils.version import get_main_version
 
 from chamber.exceptions import PersistenceException
 from chamber.patch import Options
@@ -457,7 +458,7 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         self.is_changing = True
         self.changed_fields = DynamicChangedFields(self)
 
-        if StrictVersion(django.get_version()) < StrictVersion('2.0'):
+        if StrictVersion(get_main_version()) < StrictVersion('2.0'):
             for field in [f for f in self._meta.get_fields() if f.is_relation]:
                 # For Generic relation related model is None
                 # https://docs.djangoproject.com/en/2.1/ref/models/meta/#migrating-from-the-old-api
