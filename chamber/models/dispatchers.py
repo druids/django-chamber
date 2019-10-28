@@ -65,8 +65,8 @@ class CreatedDispatcher(BaseDispatcher):
     Calls registered handler if and only if an instance of the model is being created.
     """
 
-    def _can_dispatch(self, instance, change, **kwargs):
-        return not change
+    def _can_dispatch(self, instance, changed, **kwargs):
+        return not changed
 
 
 class StateDispatcher(BaseDispatcher):
@@ -85,7 +85,7 @@ class StateDispatcher(BaseDispatcher):
         self.field_value = field_value
         super().__init__(handler, signal=signal)
 
-    def _can_dispatch(self, instance, change, changed_fields, *args, **kwargs):
+    def _can_dispatch(self, instance, changed, changed_fields, *args, **kwargs):
         return (
             self.field.get_attname() in changed_fields and
             getattr(instance, self.field.get_attname()) == self.field_value

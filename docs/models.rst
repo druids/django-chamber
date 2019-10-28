@@ -119,13 +119,15 @@ SmartModel
 
         Like a django form field you can use your own method named by field name for cleaning input value. You can too raise ``ValidationError`` if input value is invalid
 
-    .. method:: _pre_save()
+    .. method:: _pre_save(change, changed_fields, *args, **kwargs)
 
-        Method that is called before saving instance. You can here change instance structure or call some operations before saving object
+        Method that is called before saving instance. You can here change instance structure or call some operations before saving object. Parameter ``change`` has True value if model instance existed before save was called, otherwise False.
+        Parameter ``changed_fields`` contains name of changed fields and its original and current values. Changes in the method body have no effect on ``changed_fields`` property.
 
-    .. method:: _post_save()
+    .. method:: _post_save(change, changed_fields, *args, **kwargs)
 
-        Method that is called after saving instance. You can here change instance structure or call some operations after saving object
+        Method that is called after saving instance. You can here change instance structure or call some operations after saving object. Parameter ``change`` has True value if model instance existed before save was called, otherwise False.
+        Parameter ``changed_fields`` contains name of changed fields and its original and current values. Changes in the method body have no effect on ``changed_fields`` property.
 
     .. method:: _pre_delete()
 
