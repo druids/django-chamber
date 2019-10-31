@@ -10,8 +10,7 @@ setup(
     author='Lubos Matl, Oskar Hollmann',
     author_email='matllubos@gmail.com, oskar@hollmann.me',
     url='http://github.com/druids/django-chamber',
-    packages=find_packages(),
-    package_dir={'chamber': 'chamber'},
+    packages=find_packages(include=['chamber']),
     include_package_data=True,
     classifiers=[
         'Development Status :: 4 - Beta',
