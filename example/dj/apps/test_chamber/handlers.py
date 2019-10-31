@@ -27,8 +27,8 @@ def create_csv_record_handler(instance, **kwargs):
 
 class OneTimeStateChangedHandler(InstanceOneTimeOnSuccessHandler):
 
-    def can_handle(self, instance, **kwargs):
-        return 'state' in instance.changed_fields
+    def can_handle(self, instance, changed, changed_fields, **kwargs):
+        return 'state' in changed_fields
 
     def handle(self, instance, **kwargs):
         from .models import TestOnDispatchModel

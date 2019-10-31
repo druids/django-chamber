@@ -356,14 +356,29 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
     def _get_save_extra_kwargs(self):
         return {}
 
-    def _pre_save(self, *args, **kwargs):
+    def _pre_save(self, changed, changed_fields, *args, **kwargs):
+        """
+        :param change: True if model instance was changed, False if was created
+        :param changed_fields: fields that was changed before _pre_save was called (changes in the method do not
+                affect it)
+        """
         pass
 
-    def _call_pre_save(self, *args, **kwargs):
-        self._pre_save(*args, **kwargs)
+    def _call_pre_save(self, changed, changed_fields, *args, **kwargs):
+        self._pre_save(changed, changed_fields, *args, **kwargs)
 
     def _save(self, update_only_changed_fields=False, is_cleaned_pre_save=None, is_cleaned_post_save=None,
               force_insert=False, force_update=False, using=None, update_fields=None, *args, **kwargs):
+        """
+        Save of SmartModel has the following sequence:
+        * pre-save methods are called
+        * pre-save validation is invoked (it can be turned off)
+        * pre-save signals are called
+        * model is saved, model changed fields are reset, is_adding is not False and is_changing has True value
+        * post-save methods are called
+        * post-save validation is invoked (it is turned off by default)
+        * post-save signals are invoked
+        """
         is_cleaned_pre_save = (
             self._smart_meta.is_cleaned_pre_save if is_cleaned_pre_save is None else is_cleaned_pre_save
         )
@@ -375,36 +390,56 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
 
         kwargs.update(self._get_save_extra_kwargs())
 
-        self._call_pre_save(self.is_changing, self.changed_fields, *args, **kwargs)
+        self._call_pre_save(
+            changed=self.is_changing, changed_fields=self.changed_fields.get_static_changes(), *args, **kwargs
+        )
         if is_cleaned_pre_save:
             self._clean_pre_save(*args, **kwargs)
-        dispatcher_pre_save.send(sender=origin, instance=self, change=self.is_changing,
-                                 changed_fields=self.changed_fields.get_static_changes(),
-                                 *args, **kwargs)
+        dispatcher_pre_save.send(
+            sender=origin, instance=self, changed=self.is_changing,
+            changed_fields=self.changed_fields.get_static_changes(),
+            *args, **kwargs
+        )
+
         if not update_fields and update_only_changed_fields:
             update_fields = list(self.changed_fields.keys()) + ['changed_at']
             # remove primary key from updating fields
             if self._meta.pk.name in update_fields:
                 update_fields.remove(self._meta.pk.name)
-        super().save(force_insert=force_insert, force_update=force_update, using=using,
-                                     update_fields=update_fields)
 
-        self._call_post_save(self.is_changing, self.changed_fields, *args, **kwargs)
+        # Changed fields must be cached before save, for post_save and signal purposes
+        post_save_changed_fields = self.changed_fields.get_static_changes()
+        post_save_is_changing = self.is_changing
+
+        self.save_simple(force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields)
+
+        self._call_post_save(
+            changed=post_save_is_changing, changed_fields=post_save_changed_fields, *args, **kwargs
+        )
         if is_cleaned_post_save:
             self._clean_post_save(*args, **kwargs)
-        dispatcher_post_save.send(sender=origin, instance=self, change=self.is_changing,
-                                  changed_fields=self.changed_fields.get_static_changes(),
-                                  *args, **kwargs)
+        dispatcher_post_save.send(
+            sender=origin, instance=self, changed=post_save_is_changing, changed_fields=post_save_changed_fields,
+            *args, **kwargs
+        )
         self.post_save.send()
 
-    def _post_save(self, *args, **kwargs):
+    def _post_save(self, changed, changed_fields, *args, **kwargs):
+        """
+        :param change: True if model instance was changed, False if was created
+        :param changed_fields: fields that was changed before _post_save was called (changes in the method do not
+               affect it)
+         """
         pass
 
-    def _call_post_save(self, *args, **kwargs):
-        self._post_save(*args, **kwargs)
+    def _call_post_save(self, changed, changed_fields, *args, **kwargs):
+        self._post_save(changed, changed_fields, *args, **kwargs)
 
     def save_simple(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        self.is_adding = False
+        self.is_changing = True
+        self.changed_fields = DynamicChangedFields(self)
 
     def save(self, update_only_changed_fields=False, *args, **kwargs):
         if self._smart_meta.is_save_atomic:
@@ -412,9 +447,6 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
                 self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
         else:
             self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
-        self.is_adding = False
-        self.is_changing = True
-        self.changed_fields = DynamicChangedFields(self)
 
     def _pre_delete(self, *args, **kwargs):
         pass
