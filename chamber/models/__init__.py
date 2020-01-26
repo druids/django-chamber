@@ -5,7 +5,7 @@ from itertools import chain
 from distutils.version import StrictVersion
 
 import django
-from django.db import models, transaction
+from django.db import models, transaction, OperationalError
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import cached_property
@@ -518,6 +518,16 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         """
         change_and_save(self, update_only_changed_fields=update_only_changed_fields, **changed_fields)
         return self
+
+    def get_locked_instance(self):
+        """
+        Lock object and reload it from database.
+        :return: reloaded locked object from database
+        """
+        if not self.pk:
+            raise OperationalError('Unsaved object cannot be locked')
+
+        return self.__class__.objects.filter(pk=self.pk).select_for_update().get()
 
     class Meta:
         abstract = True

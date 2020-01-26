@@ -131,7 +131,6 @@ class BulkCSVImporter(AbstractCSVImporter):
                 batch.append(self.model_class(**self.get_fields_dict(row)))
         created += self.create_batch(batch)
         self._post_batch_create(len(batch), row_count)
-
         self._post_import_rows(created)
 
         return created
