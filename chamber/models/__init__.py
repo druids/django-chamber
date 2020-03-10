@@ -254,7 +254,7 @@ class SmartQuerySetMixin:
         this method provides alternative to the standard distinct method.
         :return: qs with unique objects
         """
-        return self.model.objects.filter(pk__in=self.values_list('pk', flat=True))
+        return self.model.objects.filter(pk__in=self.values('pk'))
 
     def change_and_save(self, update_only_changed_fields=False, **changed_fields):
         """
