@@ -5,22 +5,35 @@ from collections import OrderedDict
 from django.conf import settings
 from django.db import transaction, DEFAULT_DB_ALIAS
 from django.db.transaction import get_connection
-from django.utils.decorators import ContextDecorator
+
+from contextlib import contextmanager, ContextDecorator
 
 
 logger = logging.getLogger(__name__)
 
 
-def atomic(func):
+def atomic(func=None):
     """
-    Decorator helper that overrides django atomic decorator and automatically adds create revision.
+    Decorator and context manager that overrides django atomic decorator and automatically adds create revision.
+    The _atomic closure is required to achieve save ContextDecorator that nest more inner context decorator.
+    More here https://stackoverflow.com/questions/45589718/combine-two-context-managers-into-one
     """
-    try:
-        from reversion.revisions import create_revision
 
-        return transaction.atomic(create_revision()(func))
-    except ImportError:
-        return transaction.atomic(func)
+    @contextmanager
+    def _atomic():
+        try:
+            from reversion.revisions import create_revision
+
+            with transaction.atomic(), create_revision():
+                yield
+        except ImportError:
+            with transaction.atomic():
+                yield
+
+    if func:
+        return _atomic()(func)
+    else:
+        return _atomic()
 
 
 class TransactionSignalsContext:
@@ -113,16 +126,22 @@ def transaction_signals(using=None):
         return TransactionSignals(using)
 
 
-def atomic_with_signals(func):
+def atomic_with_signals(func=None):
     """
-    Atomic decorator with transaction signals.
+    Atomic decorator and context manager with transaction signals.
+    The _atomic_with_signals closure is required to achieve save ContextDecorator that nest more inner context
+    decorator. More here https://stackoverflow.com/questions/45589718/combine-two-context-managers-into-one
     """
-    try:
-        from reversion.revisions import create_revision
 
-        return transaction.atomic(create_revision()(transaction_signals(func)))
-    except ImportError:
-        return transaction.atomic(transaction_signals(func))
+    @contextmanager
+    def _atomic_with_signals():
+        with atomic(), transaction_signals():
+            yield
+
+    if func:
+        return _atomic_with_signals()(func)
+    else:
+        return _atomic_with_signals()
 
 
 class UniqueOnSuccessCallable:

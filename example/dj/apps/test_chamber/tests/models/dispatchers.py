@@ -5,7 +5,7 @@ from django.test import TransactionTestCase
 
 from chamber.models.dispatchers import BaseDispatcher, StateDispatcher
 from chamber.shortcuts import change_and_save
-from chamber.utils.transaction import transaction_signals
+from chamber.utils.transaction import transaction_signals, atomic_with_signals
 
 from germanium.tools import assert_equal  # pylint: disable=E0401
 
@@ -68,4 +68,27 @@ class DispatchersTestCase(TransactionTestCase):
             assert_equal(TestOnDispatchModel.objects.count(), 0)
             model.change_and_save(state=1)
             assert_equal(TestOnDispatchModel.objects.count(), 0)
+        assert_equal(TestOnDispatchModel.objects.count(), 1)
+
+    def test_atomic_with_signals_should_be_used_as_a_context_manager(self):
+        with atomic_with_signals():
+            model = TestDispatchersModel.objects.create()
+            assert_equal(TestOnDispatchModel.objects.count(), 0)
+            model.change_and_save(state=2)
+            assert_equal(TestOnDispatchModel.objects.count(), 0)
+            model.change_and_save(state=1)
+            assert_equal(TestOnDispatchModel.objects.count(), 0)
+        assert_equal(TestOnDispatchModel.objects.count(), 1)
+
+    def test_atomic_with_signals_should_be_used_as_a_decorator(self):
+        @atomic_with_signals
+        def create_and_upldate_test_on_dispatcher_model():
+            model = TestDispatchersModel.objects.create()
+            assert_equal(TestOnDispatchModel.objects.count(), 0)
+            model.change_and_save(state=2)
+            assert_equal(TestOnDispatchModel.objects.count(), 0)
+            model.change_and_save(state=1)
+            assert_equal(TestOnDispatchModel.objects.count(), 0)
+
+        create_and_upldate_test_on_dispatcher_model()
         assert_equal(TestOnDispatchModel.objects.count(), 1)

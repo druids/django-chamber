@@ -92,8 +92,7 @@ class AbstractCSVImporter:
         Beware, it aligns the lists of fields and row values with Nones to allow for adding fields not found in the CSV.
         Whitespace around the value of the cell is stripped.
         """
-        return {k: getattr(self, 'clean_{}'.format(k), lambda x: x)(v.strip() if isinstance(v, str)
-                                                                    else None)
+        return {k: getattr(self, 'clean_{}'.format(k), lambda x: x)(v.strip() if isinstance(v, str) else None)
                 for k, v in zip_longest(self.get_fields(), row)}
 
     def _pre_import_rows(self, row_count):
