@@ -19,7 +19,7 @@ def get_token(request):
             and settings.MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME):
         ovetaker_auth_token = request.COOKIES.get(settings.MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME)
         token = get_object_or_none(Token, key=ovetaker_auth_token, is_active=True)
-        if utils.get_user_from_token(token).is_authenticated():
+        if utils.get_user_from_token(token).is_authenticated:
             return token
 
     return utils.get_token(request)
