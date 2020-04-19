@@ -43,3 +43,7 @@ example/media/
 # Makefile config #
 ###################
 build/config
+
+# Virtualenv #
+##############
+ve/
