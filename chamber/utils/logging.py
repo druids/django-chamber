@@ -29,8 +29,7 @@ class AppendExtraJSONHandler(logging.StreamHandler):
             for k, v in record.__dict__.items()
             if k not in self.DEFAULT_STREAM_HANDLER_VARIABLE_KEYS.union(self.CUSTOM_STREAM_HANDLER_VARIABLE_KEYS)
         }
-        record.msg = '{} --- {}'.format(record.msg, json.dumps(extra, cls=DjangoJSONEncoder,
-                                        default=lambda x: '<<NON-SERIALIZABLE TYPE: {}>>'.format(type(x).__qualname__)))
+        record.msg = '{} --- {}'.format(record.msg, json.dumps(extra, cls=DjangoJSONEncoder))
         super().emit(record)
 
 
