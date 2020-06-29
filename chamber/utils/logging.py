@@ -2,8 +2,9 @@ import json
 import logging
 import platform
 
-from django.core.serializers.json import DjangoJSONEncoder
 from django.http import UnreadablePostError
+
+from chamber.utils.json import ChamberJSONEncoder
 
 
 def skip_unreadable_post(record):
@@ -29,7 +30,7 @@ class AppendExtraJSONHandler(logging.StreamHandler):
             for k, v in record.__dict__.items()
             if k not in self.DEFAULT_STREAM_HANDLER_VARIABLE_KEYS.union(self.CUSTOM_STREAM_HANDLER_VARIABLE_KEYS)
         }
-        record.msg = '{} --- {}'.format(record.msg, json.dumps(extra, cls=DjangoJSONEncoder))
+        record.msg = '{} --- {}'.format(record.msg, json.dumps(extra, cls=ChamberJSONEncoder))
         super().emit(record)
 
 
