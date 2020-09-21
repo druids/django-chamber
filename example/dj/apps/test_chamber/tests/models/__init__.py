@@ -317,3 +317,24 @@ class ModelsTestCase(TransactionTestCase):
         assert_equal(qs.count(), 2)
         assert_equal(tuple(qs.values_list('pk', flat=True)), (t.pk, t.pk))
         assert_equal(qs.fast_distinct().count(), 1)
+
+    def test_smart_model_first_and_last_with_order(self):
+        test3 = TestSmartModel.objects.create(name='3')
+        test2 = TestSmartModel.objects.create(name='2')
+        test1 = TestSmartModel.objects.create(name='1')
+
+        assert_equal(TestSmartModel.objects.first('id'), test3)
+        assert_equal(TestSmartModel.objects.last('id'), test1)
+
+        assert_equal(TestSmartModel.objects.first('name'), test1)
+        assert_equal(TestSmartModel.objects.last('name'), test3)
+
+        assert_equal(TestSmartModel.objects.filter(name='2').first(), test2)
+        assert_equal(TestSmartModel.objects.filter(name='2').last(), test2)
+
+    def test_smart_model_str_method(self):
+        obj = TestSmartModel.objects.create(name='1')
+        assert_equal(str(obj), 'test smart model #{}'.format(obj.pk))
+
+        unstored_obj = TestSmartModel(name='1')
+        assert_equal(str(unstored_obj), 'test smart model #None')
