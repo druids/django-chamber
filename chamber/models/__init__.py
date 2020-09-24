@@ -6,6 +6,7 @@ from distutils.version import StrictVersion
 
 import django
 from django.db import models, transaction, OperationalError
+from django.db.models.manager import BaseManager
 from django.db.models.base import ModelBase
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import cached_property
@@ -264,8 +265,30 @@ class SmartQuerySetMixin:
         bulk_change_and_save(self, update_only_changed_fields=update_only_changed_fields, **changed_fields)
         return self.filter()
 
+    def first(self, *field_names):
+        """
+        Adds possibility to set order fields to default Django first method.
+        """
+        if field_names:
+            return self.order_by(*field_names).first()
+        else:
+            return super().first()
+
+    def last(self, *field_names):
+        """
+        Adds possibility to set order fields to default Django last method.
+        """
+        if field_names:
+            return self.order_by(*field_names).last()
+        else:
+            return super().last()
+
 
 class SmartQuerySet(SmartQuerySetMixin, models.QuerySet):
+    pass
+
+
+class SmartManager(BaseManager.from_queryset(SmartQuerySet)):
     pass
 
 
@@ -284,7 +307,7 @@ class SmartModelBase(ModelBase):
 
 class SmartModel(AuditModel, metaclass=SmartModelBase):
 
-    objects = SmartQuerySet.as_manager()
+    objects = SmartManager()
 
     dispatchers = []
 
@@ -294,6 +317,12 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         self.is_changing = False
         self.changed_fields = DynamicChangedFields(self)
         self.post_save = Signal(self)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return '{} #{}'.format(self._meta.verbose_name, self.pk)
 
     @classmethod
     def from_db(cls, db, field_names, values):
@@ -528,9 +557,6 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
             raise OperationalError('Unsaved object cannot be locked')
 
         return self.__class__.objects.filter(pk=self.pk).select_for_update().get()
-
-    class Meta:
-        abstract = True
 
 
 class SmartOptions(Options):

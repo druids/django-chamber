@@ -284,6 +284,10 @@ will assume the custom filters to be there).
 
         Changes selected fields on the selected queryset and saves it and returns changed objects in the queryset. Difference from update is that there is called save method on the instance, but it is slower. If you want to update only changed fields in the database you can use parameter ``update_only_changed_fields`` to achieve it
 
+    .. method:: first(**field_names)
 
+        Method is only shortcut to ``Model.objects.order_by('field_name').first()``. With this method you can use ``Model.objects.first('field_name')``
 
+    .. method:: last(**field_names)
 
+        Method is only shortcut to ``Model.objects.order_by('field_name').last()``. With this method you can use ``Model.objects.last('field_name')``
