@@ -17,8 +17,8 @@ class BaseDispatcher:
 
     def __init__(self, handler, signal=None):
         self.handler = handler
-        assert (isinstance(handler, types.FunctionType)
-                or isinstance(handler, BaseHandler)), 'Handler must be function or instance of ' \
+        assert (handler is None or isinstance(handler, types.FunctionType)
+                or isinstance(handler, BaseHandler)), 'Handler must be None, function or instance of ' \
                                                       'chamber.models.handlers.BaseHandler, {}: {}'.format(self,
                                                                                                            handler)
         self._connected = defaultdict(list)
@@ -34,7 +34,12 @@ class BaseDispatcher:
         these are hidden in args and kwargs.
         """
         if self._can_dispatch(instance, **kwargs):
-            self.handler(instance=instance, **kwargs)
+            self.call_handler(instance=instance, **kwargs)
+
+    def call_handler(self, instance, **kwargs):
+        if self.handler is None:
+            raise NotImplementedError
+        return self.handler(instance=instance, **kwargs)
 
     def _can_dispatch(self, instance, *args, **kwargs):
         raise NotImplementedError
