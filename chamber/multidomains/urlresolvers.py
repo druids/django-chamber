@@ -1,11 +1,7 @@
 from urllib.parse import urlencode
 
 from django.conf import settings
-
-try:
-    from django.core.urlresolvers import reverse as django_reverse
-except ImportError:
-    from django.urls import reverse as django_reverse
+from django.urls import reverse as django_reverse
 
 
 

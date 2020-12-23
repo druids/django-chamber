@@ -2,8 +2,11 @@ import os
 
 from io import StringIO
 
+
+from django.db import DEFAULT_DB_ALIAS
 from django.core.management import call_command
-from django.core.serializers import base, python
+from django.core.serializers import python, base
+from django.core.management.commands import loaddata
 
 
 class MigrationLoadFixture:
@@ -26,9 +29,13 @@ class MigrationLoadFixture:
                 raise base.DeserializationError("Invalid model identifier: '%s'" % model_identifier)
 
         get_model_tmp = python._get_model  # pylint: disable=W0212
-        python._get_model = _get_model
-        file = os.path.join(self.fixture_dir, self.fixture_filename)
-        if not os.path.isfile(file):
-            raise IOError('File "%s" does not exists' % file)
-        call_command('loaddata', file, stdout=StringIO())
-        python._get_model = get_model_tmp  # pylint: disable=W0212
+        try:
+            python._get_model = _get_model
+            file = os.path.join(self.fixture_dir, self.fixture_filename)
+            if not os.path.isfile(file):
+                raise IOError('File "%s" does not exists' % file)
+            loaddata.Command().handle(
+                file, ignore=True, database=DEFAULT_DB_ALIAS, app_label=None, verbosity=0, exclude=[], format='json'
+            )
+        finally:
+            python._get_model = get_model_tmp  # pylint: disable=W0212

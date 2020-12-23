@@ -1,5 +1,6 @@
 from urllib.parse import urlparse
 
+from django.apps import apps
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -38,13 +39,7 @@ class Domain:
 
     @property
     def user_class(self):
-        try:
-            from django.apps import apps
-            get_model = apps.get_model
-        except ImportError:
-            from django.db.models.loading import get_model
-
-        return get_model(*self.user_model.split('.', 1))
+        return apps.get_model(*self.user_model.split('.', 1))
 
 
 def get_domain(site_id):

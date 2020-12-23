@@ -82,6 +82,12 @@ class ShortcutsTestCase(TestCase):
         assert_equal(obj.name, 'test2')
         assert_equal(obj.number, 3)
 
+    def test_model_change(self):
+        obj = DiffModel.objects.create(name='test', datetime=timezone.now(), number=2)
+        DiffModel.objects.filter(pk=obj.pk).update(name='test2')
+        obj.change(number=3)
+        assert_equal(obj.number, 3)
+
     def test_bulk_change_and_save(self):
         obj1 = ShortcutsModel.objects.create(name='test1', datetime=timezone.now(), number=1)
         obj2 = ShortcutsModel.objects.create(name='test2', datetime=timezone.now(), number=2)
@@ -106,3 +112,12 @@ class ShortcutsTestCase(TestCase):
         bulk_save([obj1, obj2])
         assert_equal(ShortcutsModel.objects.first().name, 'modified')  # instance is changed but saved to DB
         assert_equal(ShortcutsModel.objects.last().name, 'modified')  # instance is changed but saved to DB
+
+    def test_queryset_change_and_save(self):
+        obj1 = DiffModel.objects.create(name='test', datetime=timezone.now(), number=2)
+        obj2 = DiffModel.objects.create(name='test', datetime=timezone.now(), number=2)
+        DiffModel.objects.all().change_and_save(name='modified')
+        obj1.refresh_from_db()
+        obj2.refresh_from_db()
+        assert_equal(obj1.name, 'modified')
+        assert_equal(obj2.name, 'modified')

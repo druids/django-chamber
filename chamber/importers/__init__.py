@@ -1,15 +1,11 @@
 import csv
 import io
 
+from itertools import zip_longest
+
 from django.conf import settings
 
 import pyprind
-
-
-try:
-    from itertools import zip_longest
-except ImportError:
-    from itertools import izip_longest as zip_longest
 
 
 def simple_count(file):
@@ -127,12 +123,15 @@ class BulkCSVImporter(AbstractCSVImporter):
                 self._post_batch_create(self.get_batch_size(), row_count)
                 del batch[:]
             if any(row):  # Skip blank lines
-                batch.append(self.model_class(**self.get_fields_dict(row)))
+                batch.append(self.create_instance(row))
         created += self.create_batch(batch)
         self._post_batch_create(len(batch), row_count)
         self._post_import_rows(created)
 
         return created
+
+    def create_instance(self, row):
+        return self.model_class(**self.get_fields_dict(row))
 
     def get_delete_existing_objects(self):
         return self.delete_existing_objects
