@@ -1,13 +1,10 @@
-Django==2.0
+Django==3.1
 diff-match-patch==20110725.1
 django-germanium==2.1.0
 six==1.10.0
-coverage==4.0.2
-pyprind==2.9.9
-coveralls==1.1
-filemagic==1.6
-unidecode==0.4.20
-pillow==6.2.0
-django-storages==1.7.1
-boto3==1.9.209
+coverage==5.3.1
+coveralls==2.2.0
+pillow==8.0.1
+boto3==1.16.47
+django-storages==1.11.1
 -e ../

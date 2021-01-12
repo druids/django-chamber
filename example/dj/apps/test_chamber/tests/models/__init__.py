@@ -1,11 +1,12 @@
 from datetime import timedelta
 
+from django.db import OperationalError
 from django.core.exceptions import ValidationError
 from django.test import TransactionTestCase
 from django.utils import timezone
 
 from chamber.exceptions import PersistenceException
-from chamber.models import DynamicChangedFields, Comparator, Unknown
+from chamber.models import DynamicChangedFields, Comparator, Unknown, Deferred
 
 from germanium.tools import assert_equal, assert_false, assert_raises, assert_true  # pylint: disable=E0401
 
@@ -90,14 +91,48 @@ class ModelsTestCase(TransactionTestCase):
         assert_true(obj.is_changing)
         assert_true(all(v is not Unknown for v in obj.initial_values.values()))
 
+        assert_equal(str(Unknown), 'unknown')
+
+    def test_smart_model_initial_values_should_be_deferred_for_partly_loaded_instance(self):
+        obj = DiffModel.objects.only('name').get(
+            pk=DiffModel.objects.create(name='test', datetime=timezone.now(), number=2).pk
+        )
+
+        assert_false(obj.has_changed)
+        assert_false(obj.changed_fields)
+        assert_false(obj.is_adding)
+        assert_true(obj.is_changing)
+        assert_true(all(v is Deferred for k, v in obj.initial_values.items() if k not in {'id', 'name'}))
+        assert_true(all(not bool(v) for k, v in obj.initial_values.items() if k not in {'id', 'name'}))
+
+        assert_equal(obj.number, 2)
+        assert_false(obj.has_changed)
+        assert_false(obj.changed_fields)
+        assert_equal(obj.initial_values['number'], 2)
+
+        obj.datetime = timezone.now()
+        assert_equal(obj.initial_values['datetime'], Deferred)
+        assert_true(obj.changed_fields)
+        assert_equal(obj.changed_fields.keys(), {'datetime'})
+        assert_equal(str(Deferred), 'deferred')
+
     def test_smart_model_changed_fields(self):
         obj = TestProxySmartModel.objects.create(name='a')
         changed_fields = DynamicChangedFields(obj)
+        assert_equal(len(changed_fields), 4)
+        changed_fields.from_db()
         assert_equal(len(changed_fields), 0)
         obj.name = 'b'
         assert_equal(len(changed_fields), 1)
         assert_equal(changed_fields['name'].initial, 'a')
         assert_equal(changed_fields['name'].current, 'b')
+        assert_equal(changed_fields.changed_values, {'name': 'b'})
+        assert_equal(str(changed_fields), "{'name': ValueChange(initial='a', current='b')}")
+        assert_true(changed_fields.has_key('name'))
+        assert_false(changed_fields.has_key('changed_at'))
+        assert_equal(list(changed_fields.values()), [changed_fields['name']])
+        assert_equal(changed_fields.keys(), {'name'})
+
         static_changed_fields = changed_fields.get_static_changes()
         obj.save()
 
@@ -115,6 +150,7 @@ class ModelsTestCase(TransactionTestCase):
         assert_raises(AttributeError, changed_fields.__delitem__, 'name')
         assert_raises(AttributeError, changed_fields.clear)
         assert_raises(AttributeError, changed_fields.pop, 'name')
+        assert_raises(AttributeError, changed_fields.__setitem__, 'name', 'value')
 
         obj.name = 'b'
 
@@ -338,3 +374,12 @@ class ModelsTestCase(TransactionTestCase):
 
         unstored_obj = TestSmartModel(name='1')
         assert_equal(str(unstored_obj), 'test smart model #None')
+
+    def test_smart_model_get_locked_instance(self):
+        not_saved_obj = TestSmartModel()
+
+        assert_raises(OperationalError, not_saved_obj.get_locked_instance)
+
+        obj = TestSmartModel.objects.create(name='1')
+        assert_equal(obj, obj.get_locked_instance())
+

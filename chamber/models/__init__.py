@@ -1,7 +1,5 @@
 import collections
 
-from itertools import chain
-
 from distutils.version import StrictVersion
 
 import django
@@ -60,11 +58,24 @@ class UnknownSingleton:
 Unknown = UnknownSingleton()
 
 
+@singleton
+class DeferredSingleton:
+
+    def __repr__(self):
+        return 'deferred'
+
+    def __bool__(self):
+        return False
+
+
+Deferred = DeferredSingleton()
+
+
 def unknown_model_fields_to_dict(instance, fields=None, exclude=None):
 
     return {
         field.name: Unknown
-        for field in chain(instance._meta.concrete_fields, instance._meta.many_to_many)  # pylint: disable=W0212
+        for field in instance._meta.concrete_fields  # pylint: disable=W0212
         if not should_exclude_field(field, fields, exclude)
     }
 
@@ -73,10 +84,9 @@ def model_to_dict(instance, fields=None, exclude=None):
     """
     The same implementation as django model_to_dict but editable fields are allowed
     """
-
     return {
         field.name: field_to_dict(field, instance)
-        for field in chain(instance._meta.concrete_fields, instance._meta.many_to_many)  # pylint: disable=W0212
+        for field in instance._meta.concrete_fields  # pylint: disable=W0212
         if not should_exclude_field(field, fields, exclude)
     }
 
@@ -94,7 +104,7 @@ class ChangedFields:
 
     @property
     def initial_values(self):
-        return self._initial_dict
+        return self._initial_dict.copy()
 
     @property
     def current_values(self):
@@ -134,9 +144,6 @@ class ChangedFields:
     def has_any_key(self, *keys):
         return bool(set(self.keys()) & set(keys))
 
-    def update(self, *args, **kwargs):
-        raise AttributeError('Object is readonly')
-
     def keys(self):
         return self.diff.keys()
 
@@ -169,26 +176,40 @@ class DynamicChangedFields(ChangedFields):
 
     def __init__(self, instance):
         super().__init__(
-            self._get_unknown_dict(instance) if instance.is_adding else self._get_instance_dict(instance)
+            self._get_unknown_dict(instance)
         )
         self.instance = instance
 
     def _get_unknown_dict(self, instance):
-        return unknown_model_fields_to_dict(
-            instance, fields=(field.name for field in instance._meta.fields)
-        )
-
-    def _get_instance_dict(self, instance):
-        return model_to_dict(
-            instance, fields=(field.name for field in instance._meta.fields)
-        )
+        return unknown_model_fields_to_dict(instance)
 
     @property
     def current_values(self):
-        return self._get_instance_dict(self.instance)
+        deferred_values = {
+            field_name: value for field_name, value in self._initial_dict.items()
+            if field_name in self.instance.get_deferred_fields()
+        }
+        current_values = model_to_dict(
+            self.instance,
+            exclude=set(deferred_values.keys())
+        )
+        current_values.update(deferred_values)
+        return current_values
 
     def get_static_changes(self):
         return StaticChangedFields(self.initial_values, self.current_values)
+
+    def from_db(self, fields=None):
+        if fields is None:
+            fields = {field_name for field_name, value in self._initial_dict.items() if value is not Deferred}
+
+        self._initial_dict.update(
+            model_to_dict(self.instance, fields=set(fields))
+        )
+
+        for field_name, value in self._initial_dict.items():
+            if value is Unknown:
+                self._initial_dict[field_name] = Deferred
 
 
 class StaticChangedFields(ChangedFields):
@@ -202,7 +223,7 @@ class StaticChangedFields(ChangedFields):
 
     @property
     def current_values(self):
-        return self._current_dict
+        return self._current_dict.copy()
 
 
 class ComparableModelMixin:
@@ -315,7 +336,7 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         super().__init__(*args, **kwargs)
         self.is_adding = True
         self.is_changing = False
-        self.changed_fields = DynamicChangedFields(self)
+        self._changed_fields = DynamicChangedFields(self)
         self.post_save = Signal(self)
 
     class Meta:
@@ -329,16 +350,24 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         new = super().from_db(db, field_names, values)
         new.is_adding = False
         new.is_changing = True
-        new.changed_fields = DynamicChangedFields(new)
+        updating_fields = [
+            f.name for f in cls._meta.concrete_fields
+            if len(values) == len(cls._meta.concrete_fields) or f.attname in field_names
+        ]
+        new._changed_fields.from_db(fields=updating_fields)
         return new
 
     @property
     def has_changed(self):
-        return bool(self.changed_fields)
+        return bool(self._changed_fields)
+
+    @property
+    def changed_fields(self):
+        return self._changed_fields.get_static_changes()
 
     @property
     def initial_values(self):
-        return self.changed_fields.initial_values
+        return self._changed_fields.initial_values
 
     def full_clean(self, exclude=None, *args, **kwargs):
         errors = {}
@@ -420,24 +449,24 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         kwargs.update(self._get_save_extra_kwargs())
 
         self._call_pre_save(
-            changed=self.is_changing, changed_fields=self.changed_fields.get_static_changes(), *args, **kwargs
+            changed=self.is_changing, changed_fields=self.changed_fields, *args, **kwargs
         )
         if is_cleaned_pre_save:
             self._clean_pre_save(*args, **kwargs)
         dispatcher_pre_save.send(
             sender=origin, instance=self, changed=self.is_changing,
-            changed_fields=self.changed_fields.get_static_changes(),
+            changed_fields=self.changed_fields,
             *args, **kwargs
         )
 
         if not update_fields and update_only_changed_fields:
-            update_fields = list(self.changed_fields.keys()) + ['changed_at']
+            update_fields = list(self._changed_fields.keys()) + ['changed_at']
             # remove primary key from updating fields
             if self._meta.pk.name in update_fields:
                 update_fields.remove(self._meta.pk.name)
 
         # Changed fields must be cached before save, for post_save and signal purposes
-        post_save_changed_fields = self.changed_fields.get_static_changes()
+        post_save_changed_fields = self.changed_fields
         post_save_is_changing = self.is_changing
 
         self.save_simple(force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields)
@@ -468,7 +497,7 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         super().save(*args, **kwargs)
         self.is_adding = False
         self.is_changing = True
-        self.changed_fields = DynamicChangedFields(self)
+        self._changed_fields.from_db()
 
     def save(self, update_only_changed_fields=False, *args, **kwargs):
         if self._smart_meta.is_save_atomic:
@@ -510,22 +539,17 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         else:
             self._delete(*args, **kwargs)
 
-    def refresh_from_db(self, *args, **kwargs):
-        super().refresh_from_db(*args, **kwargs)
+    def refresh_from_db(self, using=None, fields=None):
+        super().refresh_from_db(using=using, fields=fields)
         for key, value in self.__class__.__dict__.items():
             if isinstance(value, cached_property):
                 self.__dict__.pop(key, None)
         self.is_adding = False
         self.is_changing = True
-        self.changed_fields = DynamicChangedFields(self)
 
-        if StrictVersion(get_main_version()) < StrictVersion('2.0'):
-            for field in [f for f in self._meta.get_fields() if f.is_relation]:
-                # For Generic relation related model is None
-                # https://docs.djangoproject.com/en/2.1/ref/models/meta/#migrating-from-the-old-api
-                cache_key = field.get_cache_name() if field.related_model else field.cache_attr
-                if cache_key in self.__dict__:
-                    del self.__dict__[cache_key]
+        self._changed_fields.from_db(fields={
+            f.name for f in self._meta.concrete_fields if not fields or f.attname in fields or f.name in fields
+        })
 
         return self
 
