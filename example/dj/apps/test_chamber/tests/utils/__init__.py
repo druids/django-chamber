@@ -1,3 +1,5 @@
+import codecs
+
 from django.test import TestCase
 from django.utils.functional import cached_property
 from django.utils.safestring import SafeData, mark_safe
@@ -28,7 +30,17 @@ class TestClass(object):
 class UtilsTestCase(TestCase):
 
     def test_should_remove_accent_from_string(self):
-        assert_equal('escrzyaie', remove_accent('ěščřžýáíé'))
+        assert_equal(remove_accent('ěščřžýáíé'), 'escrzyaie')
+
+    def test_should_remove_accent_from_string_when_unicode_error(self):
+        assert_equal(
+            codecs.encode('àaáÀAÁ', 'windows-1250', 'remove_accent'),
+            'aaáAAÁ'.encode('windows-1250')  # characters "à" "À" are not in charset windows-1250
+        )
+        assert_equal(
+            codecs.encode('ⓓⓙⓐⓝⓖⓞ-ⓒⓗⓐⓜⓑⓔⓡ', 'windows-1250', 'remove_accent'),
+            'django-chamber'.encode('windows-1250')
+        )
 
     classes_and_method_names = [
         [TestClass.method, TestClass, 'method'],

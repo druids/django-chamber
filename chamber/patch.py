@@ -1,5 +1,9 @@
+import codecs
+
 from django.db.models import Model
 from django.db.models.fields import Field
+
+from chamber.utils import remove_accent
 
 
 class OptionsLazy:
@@ -62,6 +66,17 @@ def field_init(self, *args, **kwargs):
     getattr(self, '_init_chamber_patch_')(*args, **kwargs)
 
 
+def remove_accent_errors(exception):
+    """
+    Implements the 'remove_accent' error handling (for encoding with text encodings only): the unencodable character
+    is replaced by an character without accent (characters are converted to ASCII).
+    """
+    chunk = exception.object[exception.start:exception.end]
+    return remove_accent(chunk), exception.end
+
+
 Field.default_humanized = None
 Field._init_chamber_patch_ = Field.__init__  # pylint: disable=W0212
 Field.__init__ = field_init
+
+codecs.register_error('remove_accent', remove_accent_errors)
