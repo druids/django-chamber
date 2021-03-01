@@ -3,7 +3,7 @@ from django.utils.functional import SimpleLazyObject
 from auth_token import utils  # pylint: disable=E0401
 from auth_token.config import settings as auth_token_settings  # pylint: disable=E0401
 from auth_token.middleware import TokenAuthenticationMiddleware, get_user  # pylint: disable=E0401
-from auth_token.models import Token  # pylint: disable=E0401
+from auth_token.models import AuthorizationToken  # pylint: disable=E0401
 from auth_token.utils import dont_enforce_csrf_checks, header_name_to_django  # pylint: disable=E0401
 
 from chamber.config import settings
@@ -18,7 +18,7 @@ def get_token(request):
     if (not request.META.get(header_name_to_django(auth_token_settings.HEADER_NAME))
             and settings.MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME):
         ovetaker_auth_token = request.COOKIES.get(settings.MULTIDOMAINS_OVERTAKER_AUTH_COOKIE_NAME)
-        token = get_object_or_none(Token, key=ovetaker_auth_token, is_active=True)
+        token = get_object_or_none(AuthorizationToken, key=ovetaker_auth_token, is_active=True)
         if utils.get_user_from_token(token).is_authenticated:
             return token
 
