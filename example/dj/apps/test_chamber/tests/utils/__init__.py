@@ -3,8 +3,11 @@ import codecs
 from django.test import TestCase
 from django.utils.functional import cached_property
 from django.utils.safestring import SafeData, mark_safe
+from django.utils.functional import cached_property
 
-from chamber.utils import get_class_method, keep_spacing, remove_accent
+from chamber.utils import (
+    get_class_method, keep_spacing, remove_accent, call_function_with_unknown_input, InvalidFunctionArguments
+)
 
 from germanium.decorators import data_provider  # pylint: disable=E0401
 from germanium.tools import assert_equal, assert_true  # pylint: disable=E0401
@@ -25,6 +28,8 @@ class TestClass(object):
     @cached_property
     def cached_property_method(self):
         pass
+
+    attribute = 'attribute'
 
 
 class UtilsTestCase(TestCase):
@@ -49,10 +54,14 @@ class UtilsTestCase(TestCase):
         [TestClass.property_method.fget, TestClass(), 'property_method'],
         [TestClass.cached_property_method.func, TestClass, 'cached_property_method'],
         [TestClass.cached_property_method.func, TestClass(), 'cached_property_method'],
+        [None, TestClass, 'attribute'],
+        [None, TestClass(), 'attribute'],
+        [None, TestClass, 'invalid'],
+        [None, TestClass(), 'invalid'],
     ]
 
     @data_provider(classes_and_method_names)
-    def test_should_return_class_method(self, expected_method, cls_or_inst, method_name):
+    def test_get_class_method_should_return_right_class_method_or_none(self, expected_method, cls_or_inst, method_name):
         assert_equal(expected_method, get_class_method(cls_or_inst, method_name))
 
     values_for_keep_spacing = [
@@ -68,3 +77,27 @@ class UtilsTestCase(TestCase):
         escaped_value = keep_spacing(value, autoescape)
         assert_equal(expected, escaped_value)
         assert_true(isinstance(escaped_value, SafeData))
+
+    def test_call_function_with_unknown_input_should_return_right_response_or_exception(self):
+        def test_function(a, b, c):
+            assert_equal(a, 3)
+            assert_equal(b, 2)
+            assert_equal(c, 1)
+
+        call_function_with_unknown_input(test_function, a=3, b=2, c=1)
+        call_function_with_unknown_input(test_function, c=1, a=3, b=2)
+        call_function_with_unknown_input(test_function, c=1, a=3, b=2, d=8, e=9)
+
+        with assert_raises(InvalidFunctionArguments):
+            call_function_with_unknown_input(test_function, a=3, b=2)
+
+    def test_call_function_with_default_values_and_unknown_input_should_return_right_response_or_exception(self):
+        def test_function(a, b=5, c=6):
+            return a, b, c
+
+        assert_equal(call_function_with_unknown_input(test_function, a=1), (1, 5, 6))
+        assert_equal(call_function_with_unknown_input(test_function, c=1, a=2), (2, 5, 1))
+        assert_equal(call_function_with_unknown_input(test_function, b=1, a=2), (2, 1, 6))
+
+        with assert_raises(InvalidFunctionArguments):
+            call_function_with_unknown_input(test_function, b=2, c=1)
