@@ -354,7 +354,7 @@ class ModelsTestCase(TransactionTestCase):
         assert_equal(tuple(qs.values_list('pk', flat=True)), (t.pk, t.pk))
         assert_equal(qs.fast_distinct().count(), 1)
 
-    def test_smart_queryset_fast_distinct_shuld_keep_ordering(self):
+    def test_smart_queryset_fast_distinct_should_keep_ordering(self):
         TestSmartModel.objects.create(name='a')
         TestSmartModel.objects.create(name='b')
         TestSmartModel.objects.create(name='c')
@@ -396,4 +396,3 @@ class ModelsTestCase(TransactionTestCase):
 
         obj = TestSmartModel.objects.create(name='1')
         assert_equal(obj, obj.get_locked_instance())
-

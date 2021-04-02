@@ -6,3 +6,4 @@ from .multidomains import *  # NOQA
 from .shortcuts import *  # NOQA
 from .storages import *  # NOQA
 from .utils import *  # NOQA
+from .transaction import *
