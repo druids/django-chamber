@@ -409,8 +409,12 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
             self.full_clean(exclude=exclude)
         except ValidationError as er:
             if hasattr(er, 'error_dict'):
-                raise PersistenceException(', '.join(
-                    ('%s: %s' % (key, ', '.join(map(force_text, val))) for key, val in er.message_dict.items())))
+                raise PersistenceException(
+                    ', '.join(
+                        ('%s: %s' % (key, ', '.join(map(force_text, val))) for key, val in er.message_dict.items())
+                    ),
+                    error_dict=er.message_dict
+                )
             else:
                 raise PersistenceException(', '.join(map(force_text, er.messages)))
 
