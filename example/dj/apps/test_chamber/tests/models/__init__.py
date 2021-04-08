@@ -360,11 +360,11 @@ class ModelsTestCase(TransactionTestCase):
         TestSmartModel.objects.create(name='c')
 
         assert_equal(
-            TestSmartModel.objects.order_by('name').fast_distinct().values_list('name', flat=True),
+            list(TestSmartModel.objects.order_by('name').fast_distinct().values_list('name', flat=True)),
             ['a', 'b', 'c']
         )
         assert_equal(
-            TestSmartModel.objects.order_by('-name').fast_distinct().values_list('name', flat=True),
+            list(TestSmartModel.objects.order_by('-name').fast_distinct().values_list('name', flat=True)),
             ['c', 'b', 'a']
         )
 
