@@ -12,7 +12,7 @@ from contextlib import contextmanager, ContextDecorator
 logger = logging.getLogger(__name__)
 
 
-def atomic(func=None):
+def atomic(using=None, savepoint=True):
     """
     Decorator and context manager that overrides django atomic decorator and automatically adds create revision.
     The _atomic closure is required to achieve save ContextDecorator that nest more inner context decorator.
@@ -20,20 +20,24 @@ def atomic(func=None):
     """
 
     @contextmanager
-    def _atomic():
+    def _atomic(using=None, savepoint=True):
         try:
             from reversion.revisions import create_revision
 
-            with transaction.atomic(), create_revision():
+            with transaction.atomic(using, savepoint), create_revision():
                 yield
         except ImportError:
-            with transaction.atomic():
+            with transaction.atomic(using, savepoint):
                 yield
 
-    if func:
-        return _atomic()(func)
+    if callable(using):
+        return _atomic(DEFAULT_DB_ALIAS, savepoint)(using)
     else:
-        return _atomic()
+        return _atomic(using, savepoint)
+
+
+class TransactionSignalsError(Exception):
+    pass
 
 
 class TransactionSignalsContext:
@@ -43,9 +47,11 @@ class TransactionSignalsContext:
     and executed only once.
     """
 
-    def __init__(self):
-        self._unique_callable = OrderedDict()
+    def __init__(self, sid, in_atomic_block):
+        self._unique_callable = {}
         self._callable_list = []
+        self.sid = sid
+        self.in_atomic_block = in_atomic_block
 
     def register(self, callable):
         if isinstance(callable, UniqueOnSuccessCallable):
@@ -58,7 +64,10 @@ class TransactionSignalsContext:
             self._callable_list.append(callable)
 
     def handle_all(self):
-        for callable in self._callable_list:
+        while self._callable_list:
+            callable = self._callable_list.pop(0)
+            if isinstance(callable, UniqueOnSuccessCallable):
+                del self._unique_callable[hash(callable)]
             callable()
 
     def join(self, transaction_signals_context):
@@ -74,24 +83,42 @@ class TransactionSignals(ContextDecorator):
     """
 
     def __init__(self, using):
-        self.using = using
+        self._using = using
 
     def __enter__(self):
-        connection = get_connection(self.using)
+        connection = get_connection(self._using)
+        sid = connection.savepoint_ids[-1] if connection.savepoint_ids else None
 
         if not hasattr(connection, 'transaction_signals_context_list'):
             connection.transaction_signals_context_list = []
 
-        connection.transaction_signals_context_list.append(TransactionSignalsContext())
+        connection.transaction_signals_context_list.append(
+            TransactionSignalsContext(sid, connection.in_atomic_block)
+        )
 
     def __exit__(self, exc_type, exc_value, traceback):
-        connection = get_connection(self.using)
-        transaction_signals_context = connection.transaction_signals_context_list.pop()
-        if not exc_value:
-            if len(connection.transaction_signals_context_list) == 0:
+        connection = get_connection(self._using)
+
+        transaction_signals_context = connection.transaction_signals_context_list[-1]
+        if not exc_value and not connection.needs_rollback:
+            if len(connection.transaction_signals_context_list) == 1:
                 transaction_signals_context.handle_all()
             else:
-                connection.transaction_signals_context_list[-1].join(transaction_signals_context)
+                connection.transaction_signals_context_list[-2].join(transaction_signals_context)
+
+        connection.transaction_signals_context_list.pop()
+        if not connection.transaction_signals_context_list:
+            del connection.transaction_signals_context_list
+
+
+def in_transaction_signals_block(using=None):
+    """
+    Check if transaction signals is active.
+    :param using: name of the database
+    :return: True/False
+    """
+    connection = get_connection(using)
+    return hasattr(connection, 'transaction_signals_context_list')
 
 
 def on_success(callable, using=None):
@@ -101,17 +128,29 @@ def on_success(callable, using=None):
     :param callable: callable or function that will be called.
     :param using: name of the database
     """
-
     connection = get_connection(using)
+    sid = connection.savepoint_ids[-1] if connection.savepoint_ids else None
+
     if getattr(connection, 'transaction_signals_context_list', False):
-        connection.transaction_signals_context_list[-1].register(callable)
+        context_list = connection.transaction_signals_context_list[-1]
+        if context_list.sid != sid or context_list.in_atomic_block != connection.in_atomic_block:
+            raise TransactionSignalsError('on_success cannot be used in atomic block without transaction_signals_block')
+
+        context_list.register(callable)
     else:
-        if settings.DEBUG:
+        if settings.DEBUG and not in_transaction_signals_block(using):
             logger.warning(
                 'For on success signal should be activated transaction signals via transaction_signals decorator.'
                 'Function is called immediately now.'
             )
         callable()
+
+
+def in_atomic_block(using=None):
+    """Check if connection is in atomic block"""
+
+    connection = get_connection(using)
+    return connection.in_atomic_block
 
 
 def transaction_signals(using=None):
@@ -126,7 +165,7 @@ def transaction_signals(using=None):
         return TransactionSignals(using)
 
 
-def atomic_with_signals(func=None):
+def atomic_with_signals(using=None, savepoint=True):
     """
     Atomic decorator and context manager with transaction signals.
     The _atomic_with_signals closure is required to achieve save ContextDecorator that nest more inner context
@@ -134,14 +173,14 @@ def atomic_with_signals(func=None):
     """
 
     @contextmanager
-    def _atomic_with_signals():
-        with atomic(), transaction_signals():
+    def _atomic_with_signals(using=None, savepoint=True):
+        with atomic(using, savepoint), transaction_signals(using):
             yield
 
-    if func:
-        return _atomic_with_signals()(func)
+    if callable(using):
+        return _atomic_with_signals(DEFAULT_DB_ALIAS, savepoint)(using)
     else:
-        return _atomic_with_signals()
+        return _atomic_with_signals(using, savepoint)
 
 
 class UniqueOnSuccessCallable:
