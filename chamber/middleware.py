@@ -1,6 +1,6 @@
 from django.db import transaction
 from django.db import connections
-from django.urls import get_resolver, set_urlconf
+from django.urls import get_resolver, set_urlconf, Resolver404
 
 from chamber.utils.transaction import transaction_signals
 
@@ -13,7 +13,7 @@ def get_view_from_request_or_none(request):
             resolver = get_resolver(urlconf)
         else:
             resolver = get_resolver()
-        return resolver.resolve(request.path_info)
+        return resolver.resolve(request.path_info)[0]
     except Resolver404:
         return None
 
@@ -25,7 +25,6 @@ class TransactionSignalsMiddleware:
 
     def __call__(self, request):
         get_response = self.get_response
-
         non_atomic_requests = getattr(get_view_from_request_or_none(request), '_non_atomic_requests', set())
         for db in connections.all():
             if db.settings_dict.get('CHAMBER_ATOMIC_REQUESTS', False) and db.alias not in non_atomic_requests:
