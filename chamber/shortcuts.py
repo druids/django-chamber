@@ -51,15 +51,19 @@ def exclude_by_date(klass, **kwargs):
     return filter_or_exclude_by_date(True, klass, **kwargs)
 
 
+def get_model_field_names(model):
+    return {
+        field.name for field in model._meta.fields
+    } | {
+        field.attname for field in model._meta.fields
+    } | {'pk'}
+
+
 def change(obj, **changed_fields):
     """
     Changes a given `changed_fields` on object and returns changed object.
     """
-    obj_field_names = {
-        field.name for field in obj._meta.fields
-    } | {
-        field.attname for field in obj._meta.fields
-    } | {'pk'}
+    obj_field_names = get_model_field_names(obj)
 
     for field_name, value in changed_fields.items():
         if field_name not in obj_field_names:
@@ -68,20 +72,32 @@ def change(obj, **changed_fields):
     return obj
 
 
+def get_update_fields(obj, **changed_fields):
+    obj_field_names = get_model_field_names(obj)
+    update_fields = []
+    for field_name, value in changed_fields.items():
+        if field_name not in obj_field_names:
+            raise ValueError("'{}' is an invalid field name".format(field_name))
+
+        if getattr(obj, field_name) != value:
+            update_fields.append(field_name)
+    return update_fields
+
+
 def change_and_save(obj, update_only_changed_fields=False, save_kwargs=None, **changed_fields):
     """
     Changes a given `changed_fields` on object, saves it and returns changed object.
     """
     from chamber.models import SmartModel
 
-    change(obj, **changed_fields)
-    if update_only_changed_fields and not isinstance(obj, SmartModel):
-        raise TypeError('update_only_changed_fields can be used only with SmartModel')
-
     save_kwargs = save_kwargs if save_kwargs is not None else {}
     if update_only_changed_fields:
-        save_kwargs['update_only_changed_fields'] = True
+        if isinstance(obj, SmartModel):
+            save_kwargs['update_only_changed_fields'] = True
+        else:
+            save_kwargs['update_fields'] = get_update_fields(obj, **changed_fields)
 
+    change(obj, **changed_fields)
     obj.save(**save_kwargs)
     return obj
 
