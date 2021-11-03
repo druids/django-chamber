@@ -5,7 +5,7 @@ from django.test import TransactionTestCase
 
 from chamber.models.dispatchers import BaseDispatcher, StateDispatcher
 from chamber.shortcuts import change_and_save
-from chamber.utils.transaction import transaction_signals, atomic_with_signals
+from chamber.utils.transaction import atomic_with_signals
 
 from germanium.tools import assert_equal  # pylint: disable=E0401
 
@@ -61,7 +61,7 @@ class DispatchersTestCase(TransactionTestCase):
         assert_equal(TestOnDispatchModel.objects.count(), 3)
 
     def test_only_one_test_on_dispatch_instances_should_be_created_if_transaction_signals_is_activated(self):
-        with transaction_signals():
+        with atomic_with_signals():
             model = TestDispatchersModel.objects.create()
             assert_equal(TestOnDispatchModel.objects.count(), 0)
             model.change_and_save(state=2)

@@ -2,21 +2,17 @@ Transaction helpers
 ===================
 
 
-``chamber.utils.transaction.atomic``
+``chamber.utils.transaction``
 ------------------------------------
 
 .. function:: atomic(func)
 
         Like django ``transaction.atomic()`` decorator chamber atomic can be used for surrounding method, function or block of code with db atomic block. But because we often uses reversion the atomic is surrounded with ``create_revision`` decorator
 
-.. function:: transaction_signals(using=None)
+.. function:: atomic_with_signals(using=None)
 
-        Decorator that is used for automatic invoking on success signals. Function or handler registered with ``on_success`` function is executed if block of code will not thrown exception.
+        Decorator/context processor that expands Django atomic with automatic invoking on success signals. Function or handler registered with ``on_success`` function is executed if block of code will not thrown exception.
         Its behaviour is very similar to atomic block, if you will inherit these decorators the event will be invoked until after the completion of last decorated code.
-
-.. function:: atomic_with_signals(func)
-
-        Combination of ``atomic`` and ``transaction_signals``.
 
 .. function:: on_success(callable, using=None)
 

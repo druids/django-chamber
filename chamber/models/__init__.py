@@ -14,7 +14,7 @@ from chamber.exceptions import PersistenceException
 from chamber.patch import Options
 from chamber.shortcuts import change_and_save, change, bulk_change_and_save
 from chamber.utils.decorators import singleton
-from chamber.utils.transaction import atomic_with_signals, transaction_signals
+from chamber.utils.transaction import atomic_with_signals
 
 from .fields import *  # NOQA exposing classes and functions as a module API
 from .signals import dispatcher_post_save, dispatcher_pre_save
@@ -512,8 +512,7 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
             with atomic_with_signals():
                 self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
         else:
-            with transaction_signals():
-                self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
+            self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
 
     def _pre_delete(self, *args, **kwargs):
         pass
