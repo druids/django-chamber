@@ -1,8 +1,7 @@
-from django.db import transaction
 from django.db import connections
 from django.urls import get_resolver, set_urlconf, Resolver404
 
-from chamber.utils.transaction import transaction_signals
+from chamber.utils.transaction import atomic_with_signals
 
 
 def get_view_from_request_or_none(request):
@@ -28,10 +27,8 @@ class TransactionSignalsMiddleware:
         non_atomic_requests = getattr(get_view_from_request_or_none(request), '_non_atomic_requests', set())
         for db in connections.all():
             if db.settings_dict.get('CHAMBER_ATOMIC_REQUESTS', False) and db.alias not in non_atomic_requests:
-                get_response = transaction.atomic(using=db.alias)(
-                    transaction_signals(using=db.alias)(
-                        get_response
-                    )
+                get_response = atomic_with_signals(using=db.alias)(
+                    get_response
                 )
         return get_response(request)
 

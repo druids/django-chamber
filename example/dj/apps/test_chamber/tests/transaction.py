@@ -2,8 +2,8 @@ from django.test import TransactionTestCase
 from django.db import transaction
 
 from chamber.utils.transaction import (
-    on_success, transaction_signals, UniqueOnSuccessCallable, TransactionSignalsError, in_atomic_block,
-    in_transaction_signals_block
+    on_success, atomic_with_signals, UniqueOnSuccessCallable, TransactionSignalsError, in_atomic_block,
+    in_atomic_with_signals_block
 )
 
 from germanium.tools import assert_equal, assert_raises, assert_true, assert_false
@@ -23,7 +23,7 @@ class TransactionsTestCase(TransactionTestCase):
     def test_on_success_is_called_after_successful_pass(self):
         numbers_list = []
 
-        with transaction_signals():
+        with atomic_with_signals():
             on_success(lambda: add_number(numbers_list, 0))
 
             assert_equal(len(numbers_list), 0)
@@ -33,7 +33,7 @@ class TransactionsTestCase(TransactionTestCase):
     def test_on_success_is_not_called_after_not_successful_pass(self):
         numbers_list = []
         try:
-            with transaction_signals():
+            with atomic_with_signals():
                 on_success(lambda: add_number(numbers_list, 0))
                 assert_equal(len(numbers_list), 0)
                 raise Exception()
@@ -45,14 +45,14 @@ class TransactionsTestCase(TransactionTestCase):
     def test_on_success_inheritance(self):
         numbers_list = []
 
-        with transaction_signals():
-            with transaction_signals():
+        with atomic_with_signals():
+            with atomic_with_signals():
                 on_success(lambda: add_number(numbers_list, 0))
 
                 assert_equal(len(numbers_list), 0)
             assert_equal(len(numbers_list), 0)
             try:
-                with transaction_signals():
+                with atomic_with_signals():
                     on_success(lambda: add_number(numbers_list, 1))
 
                     assert_equal(len(numbers_list), 0)
@@ -72,7 +72,7 @@ class TransactionsTestCase(TransactionTestCase):
             def handle(self):
                 self.kwargs_list[-1]['numbers_list'].append(3)
 
-        with transaction_signals():
+        with atomic_with_signals():
             for i in range(5):
                 on_success(AddNumberOneTimeOnSuccessCallable(numbers_list=numbers_list, number=i))
 
@@ -89,17 +89,17 @@ class TransactionsTestCase(TransactionTestCase):
                 for kwargs in self.kwargs_list:
                     self.kwargs_list[-1]['numbers_list'].append(kwargs['number'])
 
-        with transaction_signals():
+        with atomic_with_signals():
             on_success(AddNumberOneTimeOnSuccessCallable(numbers_list=numbers_list, number=1))
             try:
-                with transaction_signals():
+                with atomic_with_signals():
                     on_success(AddNumberOneTimeOnSuccessCallable(numbers_list=numbers_list, number=2))
 
                     assert_equal(len(numbers_list), 0)
                     raise Exception()
             except Exception:
                 pass
-            with transaction_signals():
+            with atomic_with_signals():
                 on_success(AddNumberOneTimeOnSuccessCallable(numbers_list=numbers_list, number=3))
 
                 assert_equal(len(numbers_list), 0)
@@ -111,11 +111,11 @@ class TransactionsTestCase(TransactionTestCase):
         def on_success_fn():
             pass
 
-        with transaction_signals():
+        with atomic_with_signals():
             with transaction.atomic():
                 with assert_raises(TransactionSignalsError):
                     on_success(on_success_fn)
-                with transaction_signals():
+                with atomic_with_signals():
                     on_success(on_success_fn)
                     with transaction.atomic():
                         with assert_raises(TransactionSignalsError):
@@ -136,7 +136,7 @@ class TransactionsTestCase(TransactionTestCase):
         data = []
 
         def on_success_fn_a():
-            with transaction_signals():
+            with atomic_with_signals():
                 on_success(on_success_fn_c)
 
             data.append('a')
@@ -147,20 +147,20 @@ class TransactionsTestCase(TransactionTestCase):
         def on_success_fn_c():
             data.append('c')
 
-        with transaction_signals():
+        with atomic_with_signals():
             on_success(on_success_fn_a)
-            with transaction_signals():
+            with atomic_with_signals():
                 on_success(on_success_fn_b)
 
         assert_equal(data, ['a', 'b', 'c'])
 
-    def test_in_transaction_signals_block_should_return_right_result(self):
+    def test_in_atomic_with_signals_block_should_return_right_result(self):
         def on_success_fn():
-            assert_true(in_transaction_signals_block())
+            assert_true(in_atomic_with_signals_block())
 
-        with transaction_signals():
-            assert_true(in_transaction_signals_block())
+        with atomic_with_signals():
+            assert_true(in_atomic_with_signals_block())
             on_success(on_success_fn)
-            with transaction_signals():
-                assert_true(in_transaction_signals_block())
-        assert_false(in_transaction_signals_block())
+            with atomic_with_signals():
+                assert_true(in_atomic_with_signals_block())
+        assert_false(in_atomic_with_signals_block())

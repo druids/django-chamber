@@ -89,6 +89,9 @@ class TransactionSignals(ContextDecorator):
         connection = get_connection(self._using)
         sid = connection.savepoint_ids[-1] if connection.savepoint_ids else None
 
+        if not in_atomic_block():
+            raise RuntimeError('transaction signals can be used only inside Django atomic block')
+
         if not hasattr(connection, 'transaction_signals_context_list'):
             connection.transaction_signals_context_list = []
 
@@ -111,7 +114,7 @@ class TransactionSignals(ContextDecorator):
             del connection.transaction_signals_context_list
 
 
-def in_transaction_signals_block(using=None):
+def in_atomic_with_signals_block(using=None):
     """
     Check if transaction signals is active.
     :param using: name of the database
@@ -138,11 +141,6 @@ def on_success(callable, using=None):
 
         context_list.register(callable)
     else:
-        if settings.DEBUG and not in_transaction_signals_block(using):
-            logger.warning(
-                'For on success signal should be activated transaction signals via transaction_signals decorator.'
-                'Function is called immediately now.'
-            )
         callable()
 
 
@@ -151,18 +149,6 @@ def in_atomic_block(using=None):
 
     connection = get_connection(using)
     return connection.in_atomic_block
-
-
-def transaction_signals(using=None):
-    """
-    Decorator that adds transaction context to the connection on input.
-    Finally callable are called on the output.
-    :param using: name of the database
-    """
-    if callable(using):
-        return TransactionSignals(DEFAULT_DB_ALIAS)(using)
-    else:
-        return TransactionSignals(using)
 
 
 def atomic_with_signals(using=None, savepoint=True):
@@ -174,7 +160,7 @@ def atomic_with_signals(using=None, savepoint=True):
 
     @contextmanager
     def _atomic_with_signals(using=None, savepoint=True):
-        with atomic(using, savepoint), transaction_signals(using):
+        with atomic(using, savepoint), TransactionSignals(using):
             yield
 
     if callable(using):
