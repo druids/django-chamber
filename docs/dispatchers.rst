@@ -131,20 +131,20 @@ Moreover handler can also serve as a dispatcher.
             MyHandler(signal=dispatcher_pre_save),
         )
 
-There are two special types of handlers ``chamber.models.handlers.OnSuccessHandler``
-and  ``chamber.models.handlers.InstanceOneTimeOnSuccessHandler``.
+There are two special types of handlers ``chamber.models.handlers.PreCommitHandler``
+and  ``chamber.models.handlers.InstanceOneTimePreCommitHandler``.
 
-.. class:: chamber.models.dispatchers.OnSuccessHandler
+.. class:: chamber.models.dispatchers.PreCommitHandler
 
 The handler uses ``chamber.utils.transaction.on_success`` to handle itself only if transaction is successful.
 In most cases the handler will be used with ``dispatcher_post_save`` signal therefore ``dispatcher_post_save``
 is default.
 
-.. class:: chamber.models.dispatchers.InstanceOneTimeOnSuccessHandler
+.. class:: chamber.models.dispatchers.InstanceOneTimePreCommitHandler
 
-Descendant of the ``hamber.models.dispatchers.OnSuccessHandler`` with the difference that is called only one
+Descendant of the ``chamber.models.dispatchers.PreCommitHandler`` with the difference that is called only one
 per model instance.
 
-WARNING: Be carefull using ``chamber.models.handlers.OnSuccessHandler``and
-``chamber.models.handlers.InstanceOneTimeOnSuccessHandler``. Handlers should not invoke another handlers or code which
+WARNING: Be carefull using ``chamber.models.handlers.PreCommitHandler``and
+``chamber.models.handlers.InstanceOneTimePreCommitHandler``. Handlers should not invoke another handlers or code which
 uses ``chamber.utils.transaction.on_success`` because the code will not be invoked.

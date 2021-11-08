@@ -5,46 +5,37 @@ Transaction helpers
 ``chamber.utils.transaction.atomic``
 ------------------------------------
 
-.. function:: atomic(func)
+.. function:: smart_atomic(using=None, savepoint=True, ignore_errors=None, reversion=True)
 
-        Like django ``transaction.atomic()`` decorator chamber atomic can be used for surrounding method, function or block of code with db atomic block. But because we often uses reversion the atomic is surrounded with ``create_revision`` decorator
+        Like django ``transaction.smart_atomic()`` decorator chamber atomic can be used for surrounding method, function or block of code with db atomic block. But because we often uses reversion the atomic is surrounded with ``create_revision`` decorator. Reversion can be turned off with ``reversion`` argument
 
-.. function:: transaction_signals(using=None)
+.. function:: pre_commit(callable, using=None)
 
-        Decorator that is used for automatic invoking on success signals. Function or handler registered with ``on_success`` function is executed if block of code will not thrown exception.
-        Its behaviour is very similar to atomic block, if you will inherit these decorators the event will be invoked until after the completion of last decorated code.
-
-.. function:: atomic_with_signals(func)
-
-        Combination of ``atomic`` and ``transaction_signals``.
-
-.. function:: on_success(callable, using=None)
-
-        Function for on success handlers registration. If transaction signals are not activated (decorator ``transaction_signals`` is not used) the callabe will be invoked immediately.
+        Similar to django ``on_commit`` helper, but callable function is called before the data is saved to the database. Of no atomic bloc is activated callable is called imediatelly
 
 
-``chamber.utils.transaction.UniqueOnSuccessCallable``
+``chamber.utils.transaction.UniquePreCommitCallable``
 -----------------------------------------------------
 
 One time callable is registered and called only once. But all input parameters are stored inside list of kwargs.
 
-.. class:: chamber.utils.transaction.OneTimeOnSuccessHandler
+.. class:: chamber.utils.transaction.OneTimePreCommitHandler
 
     .. method:: handle()
 
-        There should be implemented code that will be invoked after success pass though the code. Difference from ``OnSuccessHandler.handle`` is that kwargs is stored inside list in the order how handlers was created
+        There should be implemented code that will be invoked after success pass though the code. Difference from ``PreCommitHandler.handle`` is that kwargs is stored inside list in the order how handlers was created
 
     .. method:: _get_unique_id()
 
         The uniqueness of the handler must be somehow defined. You must implement this method to define unique identifier of the handler. By default it is identified with has of the class
 
 
-``chamber.utils.transaction.InstanceOneTimeOnSuccessHandler``
+``chamber.utils.transaction.InstanceOneTimePreCommitHandler``
 -------------------------------------------------------------
 
 Special type of unique handler that is identified with iteslf and model instance of the input model object.
 
-.. class:: chamber.utils.transaction.InstanceOneTimeOnSuccessHandler
+.. class:: chamber.utils.transaction.InstanceOneTimePreCommitHandler
 
     .. method:: _get_instance()
 

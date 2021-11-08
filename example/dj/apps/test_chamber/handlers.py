@@ -1,4 +1,4 @@
-from chamber.models.handlers import InstanceOneTimeOnSuccessHandler
+from chamber.models.handlers import InstanceOneTimePreCommitHandler
 
 
 def create_test_smart_model_handler(instance, **kwargs):
@@ -25,7 +25,7 @@ def create_csv_record_handler(instance, **kwargs):
     CSVRecord.objects.create()
 
 
-class OneTimeStateChangedHandler(InstanceOneTimeOnSuccessHandler):
+class OneTimeStateChangedHandler(InstanceOneTimePreCommitHandler):
 
     def can_handle(self, instance, changed, changed_fields, **kwargs):
         return 'state' in changed_fields

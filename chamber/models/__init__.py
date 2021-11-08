@@ -3,6 +3,7 @@ import collections
 from distutils.version import StrictVersion
 
 import django
+from django.db import transaction
 from django.db import models, OperationalError
 from django.db.models.manager import BaseManager
 from django.db.models.base import ModelBase
@@ -14,7 +15,6 @@ from chamber.exceptions import PersistenceException
 from chamber.patch import Options
 from chamber.shortcuts import change_and_save, change, bulk_change_and_save
 from chamber.utils.decorators import singleton
-from chamber.utils.transaction import atomic_with_signals, transaction_signals
 
 from .fields import *  # NOQA exposing classes and functions as a module API
 from .signals import dispatcher_post_save, dispatcher_pre_save
@@ -509,11 +509,10 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
 
     def save(self, update_only_changed_fields=False, *args, **kwargs):
         if self._smart_meta.is_save_atomic:
-            with atomic_with_signals():
+            with transaction.atomic():
                 self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
         else:
-            with transaction_signals():
-                self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
+            self._save(update_only_changed_fields=update_only_changed_fields, *args, **kwargs)
 
     def _pre_delete(self, *args, **kwargs):
         pass
@@ -543,7 +542,7 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
 
     def delete(self, *args, **kwargs):
         if self._smart_meta.is_delete_atomic:
-            with atomic_with_signals():
+            with transaction.atomic():
                 self._delete(*args, **kwargs)
         else:
             self._delete(*args, **kwargs)
