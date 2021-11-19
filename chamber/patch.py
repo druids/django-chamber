@@ -2,6 +2,7 @@ import codecs
 
 from django.db.models import Model
 from django.db.models.fields import Field
+from django.db.transaction import get_connection, Atomic
 
 from chamber.utils import remove_accent
 
@@ -80,3 +81,42 @@ Field._init_chamber_patch_ = Field.__init__  # pylint: disable=W0212
 Field.__init__ = field_init
 
 codecs.register_error('remove_accent', remove_accent_errors)
+
+
+def atomic_pre_commit_enter(self):
+    self._enter_chamber_patch_()
+
+    connection = get_connection(self.using)
+    # empty savepoints means top level atomic block
+    if not connection.savepoint_ids:
+        connection.run_pre_commit = []
+
+
+def atomic_pre_commit_exit(self, exc_type, exc_value, traceback):
+    connection = get_connection(self.using)
+
+    if exc_type is None and not connection.needs_rollback:
+        if not connection.savepoint_ids:
+            # No exception and no rollback, pre_commit hooks can be performed on top level atomic block exit function
+            while connection.run_pre_commit:
+                sids, callable_hash, func = connection.run_pre_commit.pop(0)
+                func()
+    else:
+        if connection.savepoint_ids:
+            sid = connection.savepoint_ids[-1]
+            if sid:
+                # only current sid is removed from pre commit list
+                connection.run_pre_commit = [
+                    (sids, callable_hash, func)
+                    for (sids, callable_hash, func) in connection.run_pre_commit if sid not in sids
+                ]
+        else:
+            # top level atomic block rollback
+            connection.run_pre_commit = []
+    self._exit_chamber_patch_(exc_type, exc_value, traceback)
+
+
+Atomic._enter_chamber_patch_ = Atomic.__enter__
+Atomic._exit_chamber_patch_ = Atomic.__exit__
+Atomic.__enter__ = atomic_pre_commit_enter
+Atomic.__exit__ = atomic_pre_commit_exit

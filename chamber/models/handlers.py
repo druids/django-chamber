@@ -1,6 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 
-from chamber.utils.transaction import on_success, UniqueOnSuccessCallable
+from chamber.utils.transaction import pre_commit, UniquePreCommitCallable
 from chamber.models.signals import dispatcher_post_save
 
 
@@ -39,7 +39,7 @@ class BaseHandler:
         raise NotImplementedError
 
 
-class OnSuccessHandler(BaseHandler):
+class PreCommitHandler(BaseHandler):
     """
     Handler class that is used for performing on success operations.
     """
@@ -51,10 +51,10 @@ class OnSuccessHandler(BaseHandler):
         super().__init__(*args, **kwargs)
 
     def _handle(self, instance, **kwargs):
-        on_success(lambda: self.handle(instance, **kwargs), using=self.using)
+        pre_commit(lambda: self.handle(instance, **kwargs), using=self.using)
 
 
-class InstanceOneTimeOnSuccessHandlerCallable(UniqueOnSuccessCallable):
+class InstanceOneTimePreCommitHandlerCallable(UniquePreCommitCallable):
     """
     Use this class to create on success caller that will be unique per instance and will be called only once per
     instance.
@@ -76,10 +76,10 @@ class InstanceOneTimeOnSuccessHandlerCallable(UniqueOnSuccessCallable):
         self.handler.handle(instance=self._get_instance())
 
 
-class InstanceOneTimeOnSuccessHandler(OnSuccessHandler):
+class InstanceOneTimePreCommitHandler(PreCommitHandler):
     """
     Use this class to create handler that will be unique per instance and will be called only once per instance.
     """
 
     def _handle(self, instance, **kwargs):
-        on_success(InstanceOneTimeOnSuccessHandlerCallable(self, instance), using=self.using)
+        pre_commit(InstanceOneTimePreCommitHandlerCallable(self, instance), using=self.using)
