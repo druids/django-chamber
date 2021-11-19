@@ -21,14 +21,17 @@ class CommandOutputTMDQWrapper:
         self._out.write(msg, ending='')
 
 
-def tqdm(*args, **kwargs):
-    file = kwargs.pop('file', None)
-    if file and isinstance(file, OutputWrapper):
-        file = CommandOutputTMDQWrapper(file)
+class tqdm(original_tqdm):
 
-    return original_tqdm(
-        *args,
-        file=file,
-        ncols=100,
-        **kwargs
-    )
+    monitor_interval = 0
+
+    def __init__(self, *args, **kwargs):
+        file = kwargs.pop('file', None)
+        if file and isinstance(file, OutputWrapper):
+            file = CommandOutputTMDQWrapper(file)
+        super().__init__(
+            *args,
+            file=file,
+            ncols=100,
+            **kwargs,
+        )
