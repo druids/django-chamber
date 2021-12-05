@@ -30,7 +30,7 @@ def pre_commit(func, using=None):
         func()
 
 
-def smart_atomic(using=None, savepoint=True, ignore_errors=None, reversion=True):
+def smart_atomic(using=None, savepoint=True, ignore_errors=None, reversion=True, reversion_using=None):
     """
     Decorator and context manager that overrides django atomic decorator and automatically adds create revision.
     The _atomic closure is required to achieve save ContextDecorator that nest more inner context decorator.
@@ -40,7 +40,7 @@ def smart_atomic(using=None, savepoint=True, ignore_errors=None, reversion=True)
     ignore_errors = () if ignore_errors is None else ignore_errors
 
     @contextmanager
-    def _atomic(using=None, savepoint=True, reversion=True):
+    def _atomic(using=None, savepoint=True, reversion=True, reversion_using=None):
         try:
             from reversion.revisions import create_revision
         except ImportError:
@@ -52,7 +52,7 @@ def smart_atomic(using=None, savepoint=True, ignore_errors=None, reversion=True)
                 yield
 
         error = None
-        with transaction.atomic(using, savepoint), create_revision(using=using):
+        with transaction.atomic(using, savepoint), create_revision(using=reversion_using):
             try:
                 yield
             except ignore_errors as ex:
@@ -62,9 +62,9 @@ def smart_atomic(using=None, savepoint=True, ignore_errors=None, reversion=True)
             raise error  # pylint: disable=E0702
 
     if callable(using):
-        return _atomic(DEFAULT_DB_ALIAS, savepoint, reversion)(using)
+        return _atomic(DEFAULT_DB_ALIAS, savepoint, reversion, reversion_using)(using)
     else:
-        return _atomic(using, savepoint, reversion)
+        return _atomic(using, savepoint, reversion, reversion_using)
 
 
 def in_atomic_block(using=None):
