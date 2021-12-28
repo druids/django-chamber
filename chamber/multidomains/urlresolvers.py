@@ -4,7 +4,6 @@ from django.conf import settings
 from django.urls import reverse as django_reverse
 
 
-
 def reverse(viewname, site_id=None, add_domain=False, urlconf=None, args=None, kwargs=None, current_app=None,
             qs_kwargs=None):
     from .domain import get_domain

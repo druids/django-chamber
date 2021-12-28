@@ -4,6 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from chamber import models as chamber_models
 from chamber.models import fields as chamber_fields
+from chamber.models.comparator import ComparableModelMixin
 from chamber.models.dispatchers import CreatedDispatcher, PropertyDispatcher, StateDispatcher
 from chamber.models.signals import dispatcher_pre_save, dispatcher_post_save
 from chamber.utils.datastructures import ChoicesNumEnum, SequenceChoicesNumEnum, SubstatesChoicesNumEnum
@@ -24,9 +25,10 @@ class DiffModel(chamber_models.SmartModel):
     name = models.CharField(max_length=100)
     datetime = models.DateTimeField()
     number = models.IntegerField()
+    data = models.JSONField(null=True, blank=True)
 
 
-class ComparableModel(chamber_models.ComparableModelMixin, models.Model):
+class ComparableModel(ComparableModelMixin, models.Model):
     name = models.CharField(max_length=100)
 
 

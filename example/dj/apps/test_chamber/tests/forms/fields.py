@@ -1,3 +1,6 @@
+import os
+
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import TextInput, ValidationError
 from django.test import TransactionTestCase
@@ -35,21 +38,21 @@ class FormFieldsTestCase(TransactionTestCase):
         field = RestrictedFileField(allowed_content_types=('image/jpeg', 'application/pdf'), max_upload_size=1)
 
         # Invalid file type
-        with open('data/all_fields_filled.csv', 'rb') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'all_fields_filled.csv'), 'rb') as f:
             with assert_raises(ValidationError):
                 field.clean(SimpleUploadedFile('all_fields_filled.pdf', f.read()))
 
         # Invalid size
-        with open('data/test.jpg', 'rb') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'test.jpg'), 'rb') as f:
             with assert_raises(ValidationError):
                 field.clean(SimpleUploadedFile('test.jpg', f.read()))
 
         # Invalid file suffix
-        with open('data/test.pdf', 'rb') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'test.pdf'), 'rb') as f:
             with assert_raises(ValidationError):
                 field.clean(SimpleUploadedFile('test.csv', f.read()))
 
         # Valid file
-        with open('data/test.pdf', 'rb') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'test.pdf'), 'rb') as f:
             with assert_not_raises(ValidationError):
                 field.clean(SimpleUploadedFile('test.pdf', f.read()))

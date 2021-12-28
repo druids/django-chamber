@@ -1,13 +1,10 @@
 import logging
 
-from collections import OrderedDict
-
-from django.conf import settings
 from django.db import transaction, DEFAULT_DB_ALIAS
 from django.db.transaction import get_connection
 from django.db.transaction import TransactionManagementError
 
-from contextlib import contextmanager, ContextDecorator
+from contextlib import contextmanager
 
 
 logger = logging.getLogger(__name__)
@@ -47,8 +44,8 @@ def smart_atomic(using=None, savepoint=True, ignore_errors=None, reversion=True,
             reversion = False
 
         if not reversion:
-            @contextmanager
-            def create_revision(*args, **kwargs):
+            @contextmanager  # noqa: F811
+            def create_revision(*args, **kwargs):  # noqa: F811
                 yield
 
         error = None

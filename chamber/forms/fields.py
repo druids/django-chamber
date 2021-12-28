@@ -7,6 +7,7 @@ from .validators import (
     RestrictedFileValidator, AllowedContentTypesByFilenameFileValidator, AllowedContentTypesByContentFileValidator
 )
 
+
 class DecimalField(forms.DecimalField):
 
     def __init__(self, *args, **kwargs):

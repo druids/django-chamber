@@ -1,5 +1,7 @@
 from io import StringIO
+import os
 
+from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase
 
@@ -21,7 +23,7 @@ class ImporterTestCase(TestCase):
 
     def test_records_should_be_imported_without_optional_fields_should_be_bulk_imported_from_csv(self):
         assert_equal(CSVRecord.objects.count(), 0)
-        with open('data/required_fields_filled.csv') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'required_fields_filled.csv')) as f:
             CSVRecordImporter().import_csv(f)
         assert_equal(CSVRecord.objects.count(), 5)
 
@@ -35,7 +37,7 @@ class ImporterTestCase(TestCase):
 
     def test_records_should_be_imported_without_optional_fields_should_be_imported_from_csv(self):
         assert_equal(CSVRecord.objects.count(), 0)
-        with open('data/required_fields_filled.csv') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'required_fields_filled.csv')) as f:
             CSVRecordImporter().import_csv(f)
         assert_equal(CSVRecord.objects.count(), 5)
 
