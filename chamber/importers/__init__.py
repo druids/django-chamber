@@ -3,10 +3,6 @@ import io
 
 from itertools import zip_longest
 
-from django.conf import settings
-
-import pyprind
-
 
 def simple_count(file):
     lines = 0

@@ -2,9 +2,8 @@
 try:
     from django.core.exceptions import ImproperlyConfigured
     try:
-        #from django.db import models  # NOQA
         from chamber.patch import *  # NOQA
     except ImproperlyConfigured:
         pass
-except ImportError as ex:
+except ImportError:
     pass

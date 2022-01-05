@@ -167,7 +167,7 @@ class EnumSequenceFieldMixin:
             prev_value = model_instance.initial_values[self.attname] if model_instance.is_changing else None
             allowed_next_values = self.enum.get_allowed_next_states(prev_value, model_instance)
             if ((self.name in model_instance.changed_fields or model_instance.is_adding) and
-                  value not in allowed_next_values):
+                    value not in allowed_next_values):
                 raise ValidationError(
                     ugettext('Allowed choices are {}.').format(
                         ', '.join(('{} ({})'.format(*(self.enum.get_label(val), val)) for val in allowed_next_values))))

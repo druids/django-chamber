@@ -1,3 +1,6 @@
+import os
+
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.test import TransactionTestCase
@@ -18,7 +21,7 @@ class ModelFieldsTestCase(TransactionTestCase):
 
     def setUp(self):
         self.inst = TestFieldsModel()
-        super(ModelFieldsTestCase, self).setUp()
+        super().setUp()
 
     def test_random_file_path_should_be_generated_from_class_name(self):
         instance = CSVRecord()
@@ -94,32 +97,32 @@ class ModelFieldsTestCase(TransactionTestCase):
     def test_file_field_content_type(self):
         # These files can be saved because it has supported type
         for filename in ('all_fields_filled.csv', 'test.pdf'):
-            with open('data/{}'.format(filename), 'rb') as f:
+            with open(os.path.join(settings.PROJECT_DIR, 'data', filename), 'rb') as f:
                 assert_false(self.inst.file)
                 self.inst.file.save(filename, File(f))
                 assert_true(self.inst.file)
                 change_and_save(self.inst, file=None)
 
         # Image file is not supported
-        with open('data/test2.jpg', 'rb') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'test2.jpg'), 'rb') as f:
             assert_false(self.inst.file)
             assert_raises(PersistenceException, self.inst.file.save, 'image.jpeg', File(f))
 
     def test_image_field_max_upload_size(self):
         # File is can be stored
-        with open('data/test2.jpg', 'rb') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'test2.jpg'), 'rb') as f:
             assert_false(self.inst.image)
             self.inst.image.save('test2.jpg', File(f))
             assert_true(self.inst.image)
             change_and_save(self.inst, image=None)
 
         # File is too large to store
-        with open('data/test.jpg', 'rb') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'test.jpg'), 'rb') as f:
             assert_false(self.inst.image)
             assert_raises(PersistenceException, self.inst.image.save, 'image.jpeg', File(f))
 
         # File has a wrong extension
-        with open('data/test2.jpg', 'rb') as f:
+        with open(os.path.join(settings.PROJECT_DIR, 'data', 'test2.jpg'), 'rb') as f:
             assert_raises(PersistenceException, self.inst.image.save, 'image.html', File(f))
 
     def test_should_validate_positive_price_field(self):

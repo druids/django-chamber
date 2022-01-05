@@ -6,7 +6,8 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 
 from chamber.exceptions import PersistenceException
-from chamber.models import DynamicChangedFields, Comparator, Unknown, Deferred
+from chamber.models.changed_fields import DynamicChangedFields, Unknown, Deferred
+from chamber.models.comparator import Comparator
 
 from germanium.tools import assert_equal, assert_false, assert_raises, assert_true  # pylint: disable=E0401
 
@@ -71,7 +72,9 @@ class ModelsTestCase(TransactionTestCase):
         obj = DiffModel(name='test', datetime=timezone.now(), number=2)
         assert_true(obj.has_changed)
         assert_true(obj.changed_fields)
-        assert_equal(set(obj.changed_fields.keys()), {'created_at', 'changed_at', 'id', 'datetime', 'name', 'number'})
+        assert_equal(
+            set(obj.changed_fields.keys()), {'created_at', 'changed_at', 'id', 'datetime', 'name', 'number', 'data'}
+        )
         assert_true(obj.is_adding)
         assert_false(obj.is_changing)
         assert_true(all(v is Unknown for v in obj.initial_values.values()))
@@ -155,7 +158,7 @@ class ModelsTestCase(TransactionTestCase):
         obj.name = 'b'
 
     def test_model_diff(self):
-        obj = DiffModel.objects.create(name='test', datetime=timezone.now(), number=2)
+        obj = DiffModel.objects.create(name='test', datetime=timezone.now(), number=2, data={'test': 'data'})
         assert_false(obj.has_changed)
         obj.name = 'test2'
         assert_true(obj.has_changed)
@@ -165,6 +168,13 @@ class ModelsTestCase(TransactionTestCase):
         obj.name = 'test'
         assert_false(obj.has_changed)
         assert_false(obj.changed_fields)
+
+        obj.data['test'] = 'data2'
+        assert_true(obj.has_changed)
+        assert_equal(set(obj.changed_fields.keys()), {'data'})
+
+        obj.data['test'] = 'data'
+        assert_false(obj.has_changed)
 
         obj.name = 'test2'
         obj.number = 3

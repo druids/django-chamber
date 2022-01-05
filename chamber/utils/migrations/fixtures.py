@@ -1,10 +1,6 @@
 import os
 
-from io import StringIO
-
-
 from django.db import DEFAULT_DB_ALIAS
-from django.core.management import call_command
 from django.core.serializers import python, base
 from django.core.management.commands import loaddata
 
