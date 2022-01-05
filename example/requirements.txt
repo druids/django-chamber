@@ -1,4 +1,4 @@
-Django==3.1.13
+Django==3.1.14
 flake8
 coveralls
 diff-match-patch==20110725.1
