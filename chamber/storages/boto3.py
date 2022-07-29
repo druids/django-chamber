@@ -1,5 +1,6 @@
 import boto3
 from botocore.client import Config
+from botocore.exceptions import ClientError
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import DefaultStorage
@@ -45,6 +46,13 @@ class BaseS3Storage(S3Boto3Storage):
     def _clean_name(self, name):
         # pathlib support
         return super()._clean_name(str(name))
+
+    def _open(self, name, mode='rb'):
+        try:
+            return super()._open(name, mode)
+        except ClientError as ex:
+            if ex.response['Error']['Code'] == '403':
+                raise PermissionError(f'Cannot open file "{name}": {ex.response["Error"]["Message"]}')
 
     def save(self, name, content, max_length=None):
         content, _ = force_bytes_content(content)
