@@ -53,6 +53,8 @@ class BaseS3Storage(S3Boto3Storage):
         except ClientError as ex:
             if ex.response['Error']['Code'] == '403':
                 raise PermissionError(f'Cannot open file "{name}": {ex.response["Error"]["Message"]}')
+            else:
+                raise ex
 
     def save(self, name, content, max_length=None):
         content, _ = force_bytes_content(content)
