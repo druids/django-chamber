@@ -1,7 +1,7 @@
 from django.db import transaction, models, OperationalError
 from django.db.models.manager import BaseManager
 from django.db.models.base import ModelBase
-from django.core.exceptions import ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import cached_property
 
@@ -9,7 +9,7 @@ from chamber.exceptions import PersistenceException
 from chamber.patch import Options
 from chamber.shortcuts import change_and_save, change, bulk_change_and_save
 
-from .changed_fields import DynamicChangedFields
+from .changed_fields import DynamicChangedFields, get_unchanged_fields, get_model_field_names
 from .signals import dispatcher_post_save, dispatcher_pre_save
 
 
@@ -67,7 +67,6 @@ class SmartModelBase(ModelBase):
     """
 
     def __new__(cls, name, bases, attrs):
-
         new_cls = super().__new__(cls, name, bases, attrs)
         for dispatcher in new_cls.dispatchers:
             dispatcher.connect(new_cls)
@@ -137,18 +136,71 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
     def initial_values(self):
         return self._changed_fields.initial_values
 
-    def full_clean(self, exclude=None, *args, **kwargs):
-        errors = {}
+    def add_error(self, field, error):
+        if field is None:
+            field = NON_FIELD_ERRORS
+
+        if not isinstance(error, ValidationError):
+            # Normalize to ValidationError and let its constructor
+            # do the hard work of making sense of the input.
+            error = ValidationError({field: error})
+        else:
+            if hasattr(error, 'error_dict'):
+                raise TypeError('The `error` argument cannot contains errors for multiple fields.')
+
+            error = ValidationError({field: error.messages})
+
+        self._errors = error.update_error_dict(self._errors)
+
+    # todo test with only and defer
+    def full_clean(self, exclude=None, validate_unique=True):
+        self._errors = {}
+
+        if exclude is None:
+            exclude = []
+        else:
+            exclude = list(exclude)
+
+        for clean_together_fields in self._smart_meta.clean_together:
+            if set(clean_together_fields) - set(exclude) and set(exclude) - set(clean_together_fields) != set(exclude):
+                for field in clean_together_fields:
+                    if field in exclude:
+                        exclude.remove(field)
+
+        try:
+            self.clean_fields(exclude=exclude)
+        except ValidationError as e:
+            self._errors = e.update_error_dict(self._errors)
+
         for field in self._meta.fields:
-            if (not exclude or field.name not in exclude) and hasattr(self, 'clean_{}'.format(field.name)):
+            if (field.name not in exclude and hasattr(self, 'clean_{}'.format(field.name))
+                    and field.name not in self._errors):
                 try:
                     getattr(self, 'clean_{}'.format(field.name))()
                 except ValidationError as er:
-                    errors[field.name] = er
+                    self.add_error(field.name, er)
 
+        # Form.clean() is run even if other validation fails, so do the
+        # same with Model.clean() for consistency.
+        try:
+            self.clean()
+        except ValidationError as e:
+            self._errors = e.update_error_dict(self._errors)
+
+        # Run unique checks, but only for fields that passed validation.
+        if validate_unique:
+            for name in self._errors:
+                if name != NON_FIELD_ERRORS and name not in exclude:
+                    exclude.append(name)
+            try:
+                self.validate_unique(exclude=exclude)
+            except ValidationError as e:
+                self._errors = e.update_error_dict(self._errors)
+
+        errors = self._errors
+        del self._errors
         if errors:
             raise ValidationError(errors)
-        super().full_clean(exclude=exclude, *args, **kwargs)
 
     def _clean_save(self, *args, **kwargs):
         self._persistence_clean(*args, **kwargs)
@@ -198,7 +250,8 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         self._pre_save(changed, changed_fields, *args, **kwargs)
 
     def _save(self, update_only_changed_fields=False, is_cleaned_pre_save=None, is_cleaned_post_save=None,
-              force_insert=False, force_update=False, using=None, update_fields=None, *args, **kwargs):
+              is_cleaned_only_changed_fields=None, force_insert=False, force_update=False, using=None,
+              update_fields=None, *args, **kwargs):
         """
         Save of SmartModel has the following sequence:
         * pre-save methods are called
@@ -215,16 +268,27 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         is_cleaned_post_save = (
             self._smart_meta.is_cleaned_post_save if is_cleaned_post_save is None else is_cleaned_post_save
         )
+        is_cleaned_only_changed_fields = (
+            self._smart_meta.is_cleaned_only_changed_fields
+            if is_cleaned_only_changed_fields is None else is_cleaned_only_changed_fields
+        )
 
         origin = self.__class__
 
         kwargs.update(self._get_save_extra_kwargs())
 
+        pre_save_changed_fields = self.changed_fields.get_static_changes()
         self._call_pre_save(
-            changed=self.is_changing, changed_fields=self.changed_fields.get_static_changes(), *args, **kwargs
+            changed=self.is_changing, changed_fields=pre_save_changed_fields, *args, **kwargs
         )
+
         if is_cleaned_pre_save:
-            self._clean_pre_save(*args, **kwargs)
+            self._clean_pre_save(
+                exclude=get_unchanged_fields(
+                    self, pre_save_changed_fields
+                ) if is_cleaned_only_changed_fields else None,
+                *args, **kwargs
+            )
         dispatcher_pre_save.send(
             sender=origin, instance=self, changed=self.is_changing,
             changed_fields=self.changed_fields.get_static_changes(),
@@ -248,7 +312,12 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
             changed=post_save_is_changing, changed_fields=post_save_changed_fields, *args, **kwargs
         )
         if is_cleaned_post_save:
-            self._clean_post_save(*args, **kwargs)
+            self._clean_post_save(
+                exclude=get_unchanged_fields(
+                    self, post_save_changed_fields
+                ) if is_cleaned_only_changed_fields else None,
+                *args, **kwargs
+            )
         dispatcher_post_save.send(
             sender=origin, instance=self, changed=post_save_is_changing, changed_fields=post_save_changed_fields,
             *args, **kwargs
@@ -281,25 +350,34 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
     def _pre_delete(self, *args, **kwargs):
         pass
 
-    def _delete(self, is_cleaned_pre_delete=None, is_cleaned_post_delete=None, *args, **kwargs):
+    def _delete(self, is_cleaned_pre_delete=None, is_cleaned_post_delete=None, is_cleaned_only_changed_fields=None,
+                *args, **kwargs):
         is_cleaned_pre_delete = (
             self._smart_meta.is_cleaned_pre_delete if is_cleaned_pre_delete is None else is_cleaned_pre_delete
         )
         is_cleaned_post_delete = (
             self._smart_meta.is_cleaned_post_delete if is_cleaned_post_delete is None else is_cleaned_post_delete
         )
+        is_cleaned_only_changed_fields = (
+            self._smart_meta.is_cleaned_only_changed_fields
+            if is_cleaned_only_changed_fields is None else is_cleaned_only_changed_fields
+        )
 
         self._pre_delete(*args, **kwargs)
 
-        if is_cleaned_pre_delete:
-            self._clean_pre_delete(*args, **kwargs)
+        # Delete will not field data
+        exclude_clean_fields = get_model_field_names(self) if is_cleaned_only_changed_fields else None
 
-        super().delete(*args, **kwargs)
+        if is_cleaned_pre_delete:
+            self._clean_pre_delete(exclude=exclude_clean_fields, *args, **kwargs)
+
+        deleted_info = super().delete(*args, **kwargs)
 
         self._post_delete(*args, **kwargs)
 
         if is_cleaned_post_delete:
-            self._clean_post_delete(*args, **kwargs)
+            self._clean_post_delete(exclude=exclude_clean_fields, *args, **kwargs)
+        return deleted_info
 
     def _post_delete(self, *args, **kwargs):
         pass
@@ -307,9 +385,9 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
     def delete(self, *args, **kwargs):
         if self._smart_meta.is_delete_atomic:
             with transaction.atomic():
-                self._delete(*args, **kwargs)
+                return self._delete(*args, **kwargs)
         else:
-            self._delete(*args, **kwargs)
+            return self._delete(*args, **kwargs)
 
     def refresh_from_db(self, using=None, fields=None):
         super().refresh_from_db(using=using, fields=fields)
@@ -367,4 +445,6 @@ class SmartOptions(Options):
         'is_cleaned_post_delete': False,
         'is_save_atomic': False,
         'is_delete_atomic': False,
+        'is_cleaned_only_changed_fields': True,
+        'clean_together': []
     }

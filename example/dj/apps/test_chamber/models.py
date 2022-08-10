@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractBaseUser
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -33,6 +34,7 @@ class ComparableModel(ComparableModelMixin, models.Model):
 
 
 class TestSmartModel(chamber_models.SmartModel):
+
     name = models.CharField(max_length=100)
 
 
@@ -82,9 +84,6 @@ class TestFieldsModel(chamber_models.SmartModel):
     state_reason = chamber_models.SubchoicesPositiveIntegerField(null=True, blank=True, enum=STATE_REASON,
                                                                  supchoices_field_name='state',
                                                                  default=STATE_REASON.SUB_OK_1)
-    state_prev = chamber_models.PrevValuePositiveIntegerField(verbose_name=_('previous state'), null=False, blank=False,
-                                                              copy_field_name='state', choices=STATE.choices,
-                                                              default=STATE.NOT_OK)
     state_graph = chamber_models.EnumSequencePositiveIntegerField(verbose_name=_('graph'), null=True, blank=True,
                                                                   enum=GRAPH)
     file = chamber_models.FileField(verbose_name=_('file'), null=True, blank=True,

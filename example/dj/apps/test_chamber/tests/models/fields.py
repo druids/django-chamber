@@ -64,18 +64,6 @@ class ModelFieldsTestCase(TransactionTestCase):
         assert_is_none(TestFieldsModel._meta.get_field('state_reason').clean(  # pylint: disable=W0212
             TestFieldsModel.STATE_REASON.SUB_NOT_OK_2, self.inst))  # pylint: disable=W0212
 
-    def test_prev_value_field(self):
-        # In case of `add`, value of state is copied to state_prev
-        change_and_save(self.inst, state=TestFieldsModel.STATE.OK,
-                        state_reason=TestFieldsModel.STATE_REASON.SUB_OK_1)
-        assert_equal(self.inst.state, TestFieldsModel.STATE.OK)
-        assert_equal(self.inst.state_prev, TestFieldsModel.STATE.OK)
-
-        # Later, old value of state is stored in state_prev
-        change_and_save(self.inst, state=TestFieldsModel.STATE.NOT_OK,
-                        state_reason=TestFieldsModel.STATE_REASON.SUB_NOT_OK_1)
-        assert_equal(self.inst.state_prev, TestFieldsModel.STATE.OK)
-
     def test_sequence_choices_num_enum(self):
         # Only the first state is valid when field is null because it is the initial state
         assert_is_none(self.inst.state_graph)
@@ -106,7 +94,8 @@ class ModelFieldsTestCase(TransactionTestCase):
         # Image file is not supported
         with open(os.path.join(settings.PROJECT_DIR, 'data', 'test2.jpg'), 'rb') as f:
             assert_false(self.inst.file)
-            assert_raises(PersistenceException, self.inst.file.save, 'image.jpeg', File(f))
+            with assert_raises(PersistenceException):
+                self.inst.file.save('image.jpeg', File(f))
 
     def test_image_field_max_upload_size(self):
         # File is can be stored

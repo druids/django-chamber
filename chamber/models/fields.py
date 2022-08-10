@@ -93,23 +93,6 @@ def generate_random_upload_path(instance, filename):
     return os.path.join(instance.__class__.__name__.lower(), uuid().hex, filename)
 
 
-class PrevValuePositiveIntegerField(models.PositiveIntegerField):
-
-    def __init__(self, *args, **kwargs):
-        self.copy_field_name = kwargs.pop('copy_field_name', None)
-        super().__init__(*args, **kwargs)
-
-    def pre_save(self, model_instance, add):
-        # During migrations no changed_fields is set for a model
-        if hasattr(model_instance, 'changed_fields') and self.copy_field_name in model_instance.changed_fields:
-            setattr(
-                model_instance, self.attname,
-                getattr(model_instance, self.copy_field_name)
-                if model_instance.is_adding else model_instance.initial_values[self.copy_field_name]
-            )
-        return super().pre_save(model_instance, add)
-
-
 class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
 
     empty_values = ()
@@ -152,7 +135,6 @@ class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
 
 class EnumSequenceFieldMixin:
 
-    # TODO Once SmartWidget mixin is not in is-core, add formfield method with the appropriate widget
     def __init__(self, *args, **kwargs):
         self.enum = kwargs.pop('enum', None)
         self.prev_field_name = kwargs.pop('prev_field', None)

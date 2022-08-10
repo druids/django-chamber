@@ -5,8 +5,16 @@ import copy
 from chamber.utils.decorators import singleton
 
 
+def get_model_field_names(model):
+    return [field.name for field in model._meta.concrete_fields]  # pylint: disable=W0212
+
+
+def get_unchanged_fields(model, changed_fields):
+    return [field for field in get_model_field_names(model) if field not in changed_fields]
+
+
 def _should_exclude_field(field, fields, exclude):
-    return (fields and field.name not in fields) or (exclude and field.name in exclude)
+    return (fields and field not in fields) or (exclude and field in exclude)
 
 
 def field_value_from_instance(field, instance):
@@ -49,9 +57,9 @@ Deferred = DeferredSingleton()
 def unknown_model_fields_to_dict(instance, fields=None, exclude=None):
 
     return {
-        field.name: Unknown
-        for field in instance._meta.concrete_fields  # pylint: disable=W0212
-        if not _should_exclude_field(field, fields, exclude)
+        field_name: Unknown
+        for field_name in get_model_field_names(instance)
+        if not _should_exclude_field(field_name, fields, exclude)
     }
 
 
@@ -60,9 +68,9 @@ def model_to_dict(instance, fields=None, exclude=None):
     The same implementation as django model_to_dict but editable fields are allowed
     """
     return {
-        field.name: field_value_from_instance(field, instance)
+        field.name: copy.deepcopy(field_value_from_instance(field, instance))
         for field in instance._meta.concrete_fields  # pylint: disable=W0212
-        if not _should_exclude_field(field, fields, exclude)
+        if not _should_exclude_field(field.name, fields, exclude)
     }
 
 

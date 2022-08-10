@@ -259,7 +259,7 @@ class ModelsTestCase(TransactionTestCase):
         assert_equal(len(AtomicPostSaveTestProxySmartModel.objects.get(pk=obj.pk).name), 12)
 
     def test_smart_model_clean_pre_delete(self):
-        class PreDeleteTestProxySmartModel(TestProxySmartModel):
+        class PreDeleteTestProxySmartModel(TestSmartModel):
             class Meta:
                 proxy = True
                 verbose_name = 'testmodel'
@@ -268,6 +268,10 @@ class ModelsTestCase(TransactionTestCase):
             class SmartMeta:
                 is_cleaned_pre_save = False
                 is_cleaned_pre_delete = True
+
+            def clean(self):
+                if len(self.name) >= 10:
+                    raise ValidationError('name must be lower than 10')
 
         obj = PreDeleteTestProxySmartModel.objects.create(name=10 * 'a')
         obj_pk = obj.pk
@@ -280,7 +284,7 @@ class ModelsTestCase(TransactionTestCase):
         assert_false(PreDeleteTestProxySmartModel.objects.filter(pk=obj_pk).exists())
 
     def test_smart_model_clean_post_delete(self):
-        class PostDeleteTestProxySmartModel(TestProxySmartModel):
+        class PostDeleteTestProxySmartModel(TestSmartModel):
             class Meta:
                 proxy = True
                 verbose_name = 'testmodel'
@@ -289,6 +293,10 @@ class ModelsTestCase(TransactionTestCase):
             class SmartMeta:
                 is_cleaned_pre_save = False
                 is_cleaned_post_delete = True
+
+            def clean(self):
+                if len(self.name) >= 10:
+                    raise ValidationError('name must be lower than 10')
 
         obj = PostDeleteTestProxySmartModel.objects.create(name=10 * 'a')
         obj_pk = obj.pk
@@ -301,7 +309,7 @@ class ModelsTestCase(TransactionTestCase):
         assert_false(PostDeleteTestProxySmartModel.objects.filter(pk=obj_pk).exists())
 
     def test_smart_model_clean_atomic_post_delete(self):
-        class AtomicPostDeleteTestProxySmartModel(TestProxySmartModel):
+        class AtomicPostDeleteTestProxySmartModel(TestSmartModel):
             class Meta:
                 proxy = True
                 verbose_name = 'testmodel'
@@ -311,6 +319,10 @@ class ModelsTestCase(TransactionTestCase):
                 is_cleaned_pre_save = False
                 is_cleaned_post_delete = True
                 is_delete_atomic = True
+
+            def clean(self):
+                if len(self.name) >= 10:
+                    raise ValidationError('name must be lower than 10')
 
         obj = AtomicPostDeleteTestProxySmartModel.objects.create(name=10 * 'a')
         obj_pk = obj.pk
