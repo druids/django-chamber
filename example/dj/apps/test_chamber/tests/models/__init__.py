@@ -16,6 +16,7 @@ from test_chamber.models import ComparableModel, DiffModel, RelatedSmartModel, T
 from .dispatchers import *  # NOQA
 from .fields import *  # NOQA
 from .humanized_helpers import *  # NOQA
+from .batch_iterator import *
 
 
 class NameComparator(Comparator):
