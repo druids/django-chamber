@@ -12,7 +12,18 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.7, 3.8]
+        include:
+          - python-version: 3.7
+            django-version: Django==3.1
+
+          - python-version: 3.8
+            django-version: Django==3.1
+
+          - python-version: 3.7
+            django-version: Django==3.2
+
+          - python-version: 3.8
+            django-version: Django==3.2
 
     steps:
     - uses: actions/checkout@v2
@@ -24,6 +35,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         cd example
+        pip install ${{ matrix.django-version }}
         pip install -r requirements.txt
     - name: Flake
       run: |
