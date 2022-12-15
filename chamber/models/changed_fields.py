@@ -5,8 +5,8 @@ import copy
 from chamber.utils.decorators import singleton
 
 
-def _should_exclude_field(field, fields, exclude):
-    return (fields and field.name not in fields) or (exclude and field.name in exclude)
+def _should_exclude_field(field_name, fields, exclude):
+    return (fields and field_name not in fields) or (exclude and field_name in exclude)
 
 
 def field_value_from_instance(field, instance):
@@ -46,12 +46,19 @@ class DeferredSingleton:
 Deferred = DeferredSingleton()
 
 
-def unknown_model_fields_to_dict(instance, fields=None, exclude=None):
+def get_model_fields(model):
+    return [field for field in model._meta.concrete_fields]  # pylint: disable=W0212
 
+
+def get_model_field_names(model):
+    return [field.name for field in get_model_fields(model)]
+
+
+def unknown_model_fields_to_dict(instance, fields=None, exclude=None):
     return {
-        field.name: Unknown
-        for field in instance._meta.concrete_fields  # pylint: disable=W0212
-        if not _should_exclude_field(field, fields, exclude)
+        field_name: Unknown
+        for field_name in get_model_field_names(instance)
+        if not _should_exclude_field(field_name, fields, exclude)
     }
 
 
@@ -60,9 +67,9 @@ def model_to_dict(instance, fields=None, exclude=None):
     The same implementation as django model_to_dict but editable fields are allowed
     """
     return {
-        field.name: field_value_from_instance(field, instance)
-        for field in instance._meta.concrete_fields  # pylint: disable=W0212
-        if not _should_exclude_field(field, fields, exclude)
+        field.name: copy.deepcopy(field_value_from_instance(field, instance))
+        for field in get_model_fields(instance)  # pylint: disable=W0212
+        if not _should_exclude_field(field.name, fields, exclude)
     }
 
 
