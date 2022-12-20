@@ -38,4 +38,4 @@ You are welcomed to contribute at https://github.com/druids/django-chamber. Ther
 
 ## License
 
-This library is licenced under the 3-clause BSD licence. See the LICENCE file for details.
+This library is licenced under MIT licence. See the LICENCE file for details.

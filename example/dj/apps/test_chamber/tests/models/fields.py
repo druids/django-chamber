@@ -11,7 +11,7 @@ from chamber.forms import fields as form_fields
 from chamber.models.fields import generate_random_upload_path
 from chamber.shortcuts import change_and_save
 
-from germanium.decorators import data_provider
+from germanium.decorators import data_consumer
 from germanium.tools import assert_equal, assert_is_none, assert_false, assert_is_not_none, assert_raises, assert_true
 
 from test_chamber.models import CSVRecord, TestFieldsModel  # pylint: disable=E0401
@@ -146,7 +146,7 @@ class ModelFieldsTestCase(TransactionTestCase):
         ('total_price', ugettext_lazy('CZK'), {'max_digits', 'decimal_places', 'validators'}),
     )
 
-    @data_provider(model_fields)
+    @data_consumer(model_fields)
     def test_should_assert_form_field(self, field_name, currency, kwargs_to_remove):
         field = TestFieldsModel._meta.get_field(field_name)  # pylint: disable=W0212
         assert_equal(currency, field.currency)
