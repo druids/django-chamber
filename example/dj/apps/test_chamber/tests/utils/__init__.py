@@ -9,7 +9,7 @@ from chamber.utils import (
     get_class_method, keep_spacing, remove_accent, call_function_with_unknown_input, InvalidFunctionArguments
 )
 
-from germanium.decorators import data_provider  # pylint: disable=E0401
+from germanium.decorators import data_consumer  # pylint: disable=E0401
 from germanium.tools import assert_equal, assert_true  # pylint: disable=E0401
 
 from .datastructures import *  # NOQA
@@ -60,7 +60,7 @@ class UtilsTestCase(TestCase):
         [None, TestClass(), 'invalid'],
     ]
 
-    @data_provider(classes_and_method_names)
+    @data_consumer(classes_and_method_names)
     def test_get_class_method_should_return_right_class_method_or_none(self, expected_method, cls_or_inst, method_name):
         assert_equal(expected_method, get_class_method(cls_or_inst, method_name))
 
@@ -72,7 +72,7 @@ class UtilsTestCase(TestCase):
         ['Hello <b> escaped</b> <br />world', mark_safe('Hello <b> escaped</b> \r\nworld'), True]
     ]
 
-    @data_provider(values_for_keep_spacing)
+    @data_consumer(values_for_keep_spacing)
     def test_should_keep_spacing(self, expected, value, autoescape):
         escaped_value = keep_spacing(value, autoescape)
         assert_equal(expected, escaped_value)

@@ -4,6 +4,7 @@ from chamber.version import get_version
 
 
 setup(
+    python_requires=">=3.6",
     name='django-chamber',
     version=get_version(),
     description='Utilities library meant as a complement to django-is-core.',
@@ -19,8 +20,12 @@ setup(
         'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Framework :: Django',
     ],
     install_requires=[

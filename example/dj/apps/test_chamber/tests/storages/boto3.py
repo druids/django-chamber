@@ -3,7 +3,7 @@ from django.test import TestCase
 
 from chamber.storages.boto3 import force_bytes_content
 
-from germanium.decorators import data_provider
+from germanium.decorators import data_consumer
 
 
 class S3StorageTestCase(TestCase):
@@ -13,7 +13,7 @@ class S3StorageTestCase(TestCase):
         (b'Hello, this is bytes content.', b'Hello, this is bytes content.', False),
     )
 
-    @data_provider(TEST_DATA)
+    @data_consumer(TEST_DATA)
     def test_s3storage_casts_content_to_bytes_if_needed(self, content, content_result, should_cast):
         file = ContentFile(content)
         result, casted = force_bytes_content(file)

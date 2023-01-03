@@ -1,6 +1,6 @@
 import re
 
-from collections import MutableSet, OrderedDict
+from collections.abc import MutableSet
 from itertools import chain
 
 
@@ -16,7 +16,7 @@ class AbstractEnum:
             if not ENUM_KEY_PATTERN.match(k):
                 raise ValueError('Enum key "{}" has invalid format'.format(k))
 
-        self._container = OrderedDict(items)
+        self._container = dict(items)
         self._reverse_container = {item[1]: item[0] for item in items}
 
     def _has_attr(self, name):
