@@ -6,11 +6,11 @@ Installation
 Python/Django versions
 ----------------------
 
-+----------------------+------------+
-|  Python              | Django     |
-+======================+============+
-| 2.7, 3.4, 3.5, 3.6   | 1.7 - 1.10 |
-+----------------------+------------+
++----------------------------+------------------+
+|  Python                    | Django           |
++============================+==================+
+| 3.5, 3.6, 3.9, 3.10, 3.11  | >=2.2 <4         |
++----------------------------+------------------+
 
 
 Requirements
@@ -18,12 +18,11 @@ Requirements
 
  * **django** -- Chamber extends Django, therefore it is a natural dependency
  * **pyprind** -- used in CSV importers to show progress bars
- * **six** -- to provide Python 2/3 compatibility
- * **filemagic**
- * **unidecode**
+ * **filemagic** -- to check type of the files from its content
+ * **unidecode** -- to convert unicode characters to ascii
 
 
-Using Pip
+Using pip
 ---------
 Django-chamber is not currently inside *PyPI* but in the future you will be able to use:
 
