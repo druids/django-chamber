@@ -68,9 +68,6 @@ The ``django.db.models.FileField`` with ``RestrictedFileFieldMixin`` options.
 
 ``chamber.models.fields.PriceField`` with a default ``django.core.validators.MinValueValidator`` set to ``0.00``.
 
-.. class:: chamber.models.fields.SouthMixin
-
-Mixin for automatic South migration of custom model fields.
 
 SmartModel
 ----------
@@ -148,6 +145,24 @@ SmartModel
     .. method:: change_and_save(update_only_changed_fields=False, **changed_fields)
 
         Update instance field values with values sent in ``changed_fields`` and finally instance is saved. If you want to update only changed fields in the database you can use parameter ``update_only_changed_fields`` to achieve it
+
+    .. method:: full_clean(exclude=None, *args, **kwargs)
+
+        The original django full_clean method is improved with calling extra clean_{field} methods on the model (it is similar to django forms clean methods::
+
+            class CustomModel(SmartModel):
+
+                name = models.CharField(max_length=100)
+
+                def clean_name(self):
+                    if len(self.name) >= 10:
+                        raise ValidationError('name must be lower than 10')
+
+        The method ``clean_name`` will be automatically called when the ``full_clean`` method is triggered and ValidationError will be added to the field error.
+
+    .. method:: get_locked_instance()
+
+        The method returns the new instance of the self object which is locked in the database with ``select_for_update``. Method must be used in the django atomic block.
 
 
 SmartMeta

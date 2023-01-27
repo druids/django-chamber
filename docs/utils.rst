@@ -184,3 +184,71 @@ is equivalent to
     def absolute_amount(self):
         return abs(self.amount)
     absolute_amount.short_description = 'amount'
+
+Tqdm
+----
+
+.. class:: chamber.utils.tqdm.tqdm
+
+The class extends ``tqdm`` library (https://tqdm.github.io/). Now the ``tqdm`` context processor can be used with th django commands. Django command stdout writes newline after every write to the stdout which breaks the progress bar::
+
+    # a custom command
+    from django.core.management.base import BaseCommand
+    from chamber.utils.tqdm import tqdm
+
+    class Command(BaseCommand):
+
+        def handle(self, *args, **options):
+            for i in tqdm(range(10), file=self.stdout):
+                custom_operation(i)
+
+
+Logging
+-------
+
+.. class:: chamber.logging.AppendExtraJSONHandler
+
+Log handler which writes every extra argument in the log to the output message in a json format::
+
+    # logged message with handler
+    logger.log('message', extra={'extra': 'data'})
+
+    # logger output
+    message --- {"extra": "data"}
+
+
+Storages
+--------
+
+.. class:: chamber.storages.BaseS3Storage
+
+Class fixes bugs in the boto3 library storage. For example you can write only bytes with the standard boto3 S3Boto3Storage. Strings will raise exception. The chamber BaseS3Storage adds possibility to saves strings to the storage.
+
+.. class:: chamber.storages.BasePrivateS3Storage
+
+Improves boto3 storage with url method. With this method you can generate temporary URL address to the private s3 storage. The URL will expire after ``CHAMBER_PRIVATE_S3_STORAGE_URL_EXPIRATION`` (default value is one day).
+
+Commands
+--------
+
+makemessages
+^^^^^^^^^^^^
+
+Django makemessages commands is expanded with another keywords which represents transaction strings. This keyword you can use instead of long django functions:
+
+* ``_l`` - instead of ``gettext_lazy``
+* ``_n`` - instead of ``ngettext``
+* ``_nl`` - instead of ``ngettext_lazy``
+* ``_p`` - instead of ``pgettext``
+* ``_np`` - instead of ``npgettext``
+* ``_pl`` - instead of ``pgettext_lazy``
+* ``_npl`` - instead of ``npgettext_lazy``
+
+Second improvement is parameter ``no-creation-date`` which remove ``POT-Creation-Date`` from the result file.
+
+initdata
+^^^^^^^^
+
+Init data is command similar to django ``loaddata``. The command automatically loads the file from the path defined in setting ``CHAMBER_INITAL_DATA_PATH``.
+
+
