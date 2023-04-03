@@ -74,7 +74,7 @@ class ModelsTestCase(TransactionTestCase):
         assert_true(obj.has_changed)
         assert_true(obj.changed_fields)
         assert_equal(
-            set(obj.changed_fields.keys()), {'created_at', 'changed_at', 'id', 'datetime', 'name', 'number', 'data'}
+            set(obj.changed_fields.keys()), {'id', 'datetime', 'name', 'number', 'data'}
         )
         assert_true(obj.is_adding)
         assert_false(obj.is_changing)
@@ -123,7 +123,7 @@ class ModelsTestCase(TransactionTestCase):
     def test_smart_model_changed_fields(self):
         obj = TestProxySmartModel.objects.create(name='a')
         changed_fields = DynamicChangedFields(obj)
-        assert_equal(len(changed_fields), 4)
+        assert_equal(len(changed_fields), 2)
         changed_fields.from_db()
         assert_equal(len(changed_fields), 0)
         obj.name = 'b'
@@ -133,7 +133,6 @@ class ModelsTestCase(TransactionTestCase):
         assert_equal(changed_fields.changed_values, {'name': 'b'})
         assert_equal(str(changed_fields), "{'name': ValueChange(initial='a', current='b')}")
         assert_true(changed_fields.has_key('name'))
-        assert_false(changed_fields.has_key('changed_at'))
         assert_equal(list(changed_fields.values()), [changed_fields['name']])
         assert_equal(changed_fields.keys(), {'name'})
 
@@ -141,15 +140,15 @@ class ModelsTestCase(TransactionTestCase):
         obj.save()
 
         # Initial values is not changed
-        assert_equal(len(changed_fields), 2)
+        assert_equal(len(changed_fields), 1)
         assert_equal(len(static_changed_fields), 1)
-        assert_equal(set(changed_fields.keys()), {'name', 'changed_at'})
+        assert_equal(set(changed_fields.keys()), {'name'})
         assert_equal(set(static_changed_fields.keys()), {'name'})
         assert_equal(changed_fields['name'].initial, 'a')
         assert_equal(changed_fields['name'].current, 'b')
 
-        assert_true(changed_fields.has_any_key('name', 'crated_at'))
-        assert_false(changed_fields.has_any_key('invalid', 'crated_at'))
+        assert_true(changed_fields.has_any_key('name'))
+        assert_false(changed_fields.has_any_key('invalid'))
 
         assert_raises(AttributeError, changed_fields.__delitem__, 'name')
         assert_raises(AttributeError, changed_fields.clear)

@@ -2,12 +2,13 @@ from django.db import transaction, models, OperationalError
 from django.db.models.manager import BaseManager
 from django.db.models.base import ModelBase
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.functional import cached_property
 
 from chamber.exceptions import PersistenceException
 from chamber.patch import Options
 from chamber.shortcuts import change_and_save, change, bulk_change_and_save
+from chamber.config import settings
 
 from .changed_fields import DynamicChangedFields
 from .signals import dispatcher_post_save, dispatcher_pre_save
@@ -67,14 +68,13 @@ class SmartModelBase(ModelBase):
     """
 
     def __new__(cls, name, bases, attrs):
-
         new_cls = super().__new__(cls, name, bases, attrs)
         for dispatcher in new_cls.dispatchers:
             dispatcher.connect(new_cls)
         return new_cls
 
 
-class AuditModel(models.Model):
+class AuditModelMixin:
 
     created_at = models.DateTimeField(
         verbose_name=_('created at'),
@@ -91,11 +91,8 @@ class AuditModel(models.Model):
         db_index=True
     )
 
-    class Meta:
-        abstract = True
 
-
-class SmartModel(AuditModel, metaclass=SmartModelBase):
+class SmartModel(models.Model, metaclass=SmartModelBase):
 
     objects = SmartManager()
 
@@ -234,7 +231,9 @@ class SmartModel(AuditModel, metaclass=SmartModelBase):
         post_save_changed_fields = self.changed_fields.get_static_changes()
 
         if not update_fields and update_only_changed_fields:
-            update_fields = list(post_save_changed_fields.keys()) + ['changed_at']
+            update_fields = list(post_save_changed_fields.keys()) + [
+                field.name for field in self._meta.fields if getattr(field, 'auto_now', False)
+            ]
             # remove primary key from updating fields
             if self._meta.pk.name in update_fields:
                 update_fields.remove(self._meta.pk.name)
@@ -360,11 +359,10 @@ class SmartOptions(Options):
     meta_class_name = 'SmartMeta'
     meta_name = '_smart_meta'
     model_class = SmartModel
-    attributes = {
-        'is_cleaned_pre_save': True,
-        'is_cleaned_post_save': False,
-        'is_cleaned_pre_delete': False,
-        'is_cleaned_post_delete': False,
-        'is_save_atomic': False,
-        'is_delete_atomic': False,
-    }
+    attributes = settings.SMART_MODEL_ATTRIBUTES
+
+
+class SmartAuditModel(AuditModelMixin, SmartModel):
+
+    class Meta:
+        abstract = True

@@ -7,8 +7,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import FileField as OriginFileField
 from django.db.models.fields import DecimalField as OriginDecimalField
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext
+from django.utils.translation import gettext
 
 from chamber.config import settings
 from chamber.forms import fields as chamber_fields
@@ -71,7 +70,7 @@ class RestrictedFileFieldMixin:
         """
         from unidecode import unidecode
 
-        return super().generate_filename(instance, unidecode(force_text(filename)))
+        return super().generate_filename(instance, unidecode(str(filename)))
 
 
 class FileField(RestrictedFileFieldMixin, OriginFileField):
@@ -133,12 +132,12 @@ class SubchoicesPositiveIntegerField(models.PositiveIntegerField):
 
     def _raise_error_if_value_should_be_empty(self, value, subvalue):
         if self.enum and subvalue not in self.enum.categories and value is not None:
-            raise ValidationError(ugettext('Value must be empty'))
+            raise ValidationError(gettext('Value must be empty'))
 
     def _raise_error_if_value_not_allowed(self, value, subvalue, model_instance):
         allowed_values = self.enum.get_allowed_states(getattr(model_instance, self.supchoices_field_name))
         if subvalue in self.enum.categories and value not in allowed_values:
-            raise ValidationError(ugettext('Allowed choices are {}.').format(
+            raise ValidationError(gettext('Allowed choices are {}.').format(
                 ', '.join(('{} ({})'.format(*(self.enum.get_label(val), val)) for val in allowed_values))
             ))
 
@@ -169,7 +168,7 @@ class EnumSequenceFieldMixin:
             if ((self.name in model_instance.changed_fields or model_instance.is_adding) and
                     value not in allowed_next_values):
                 raise ValidationError(
-                    ugettext('Allowed choices are {}.').format(
+                    gettext('Allowed choices are {}.').format(
                         ', '.join(('{} ({})'.format(*(self.enum.get_label(val), val)) for val in allowed_next_values))))
 
 
@@ -184,7 +183,7 @@ class EnumSequenceCharField(EnumSequenceFieldMixin, models.CharField):
 class PriceField(DecimalField):
 
     def __init__(self, *args, **kwargs):
-        self.currency = kwargs.pop('currency', ugettext('CZK'))
+        self.currency = kwargs.pop('currency', gettext('CZK'))
         super().__init__(*args, **{
             'decimal_places': 2,
             'max_digits': 10,

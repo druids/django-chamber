@@ -1,5 +1,5 @@
 from django import forms
-from django.utils.translation import ugettext
+from django.utils.translation import gettext
 
 from chamber.config import settings
 
@@ -38,7 +38,7 @@ class PriceField(DecimalField):
     widget = PriceNumberInput
 
     def __init__(self, *args, **kwargs):
-        currency = kwargs.pop('currency', ugettext('CZK'))
+        currency = kwargs.pop('currency', gettext('CZK'))
         kwargs.setdefault('max_digits', 10)
         kwargs.setdefault('decimal_places', 2)
         if 'widget' not in kwargs:

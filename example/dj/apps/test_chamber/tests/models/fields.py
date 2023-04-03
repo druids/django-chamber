@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files import File
 from django.test import TransactionTestCase
-from django.utils.translation import ugettext_lazy
+from django.utils.translation import gettext_lazy
 
 from chamber.exceptions import PersistenceException
 from chamber.forms import fields as form_fields
@@ -130,20 +130,20 @@ class ModelFieldsTestCase(TransactionTestCase):
 
     def test_should_check_price_form_field(self):
         field = TestFieldsModel._meta.get_field('price')  # pylint: disable=W0212
-        assert_equal(ugettext_lazy('EUR'), field.currency)
+        assert_equal(gettext_lazy('EUR'), field.currency)
         form_field = field.formfield()
         assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))
         assert_equal(field.currency, form_field.widget.placeholder)
 
     def test_should_check_total_price_form_field(self):
         field = TestFieldsModel._meta.get_field('total_price')  # pylint: disable=W0212
-        assert_equal(ugettext_lazy('CZK'), field.currency)
+        assert_equal(gettext_lazy('CZK'), field.currency)
         form_field = field.formfield()
         assert_true(isinstance(form_field.widget, form_fields.PriceNumberInput))
 
     model_fields = (
-        ('price', ugettext_lazy('EUR'), {'max_digits', 'decimal_places'}),
-        ('total_price', ugettext_lazy('CZK'), {'max_digits', 'decimal_places', 'validators'}),
+        ('price', gettext_lazy('EUR'), {'max_digits', 'decimal_places'}),
+        ('total_price', gettext_lazy('CZK'), {'max_digits', 'decimal_places', 'validators'}),
     )
 
     @data_consumer(model_fields)
