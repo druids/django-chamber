@@ -8,6 +8,14 @@ DEFAULTS = {
     'PRIVATE_S3_STORAGE_URL_EXPIRATION': 3600,
     'AWS_S3_ON': getattr(django_settings, 'AWS_S3_ON', False),
     'AWS_REGION': getattr(django_settings, 'AWS_REGION', None),
+    'SMART_MODEL_ATTRIBUTES': {
+        'is_cleaned_pre_save': False,
+        'is_cleaned_post_save': False,
+        'is_cleaned_pre_delete': False,
+        'is_cleaned_post_delete': False,
+        'is_save_atomic': False,
+        'is_delete_atomic': False,
+    }
 }
 
 

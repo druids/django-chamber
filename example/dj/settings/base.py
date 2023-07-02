@@ -193,3 +193,13 @@ LOGGING = {
     }
 }
 
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+CHAMBER_SMART_MODEL_ATTRIBUTES = {
+    'is_cleaned_pre_save': True,
+    'is_cleaned_post_save': False,
+    'is_cleaned_pre_delete': False,
+    'is_cleaned_post_delete': False,
+    'is_save_atomic': False,
+    'is_delete_atomic': False,
+}

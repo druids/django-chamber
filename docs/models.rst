@@ -76,14 +76,6 @@ SmartModel
 
 .. class:: chamber.models.SmartModel
 
-    .. attribute:: created_at
-
-        Because our experience has shown us that datetime of creation is very useful this field ``django.models.DateTimeField`` with ``auto_add_no`` set to ``True`` is added to every model that inherits from ``SmartModel``
-
-    .. attribute:: changed_at
-
-        This model field is same case as ``created_at`` with the difference that there is used ``auto_now=True`` therefore every date and time of change is stored here.
-
     .. attribute:: dispatchers
 
         List of defined pre or post save dispatchers. More obout it will find _dispatchers
@@ -165,6 +157,21 @@ SmartModel
         The method returns the new instance of the self object which is locked in the database with ``select_for_update``. Method must be used in the django atomic block.
 
 
+SmartAuditModel
+----------
+
+SmartModel with two extra fields `created_at` and `changed_at` to log when the model was created or updated.
+
+.. class:: chamber.models.SmartAuditModel
+
+    .. attribute:: created_at
+
+        Because our experience has shown us that datetime of creation is very useful this field ``django.models.DateTimeField`` with ``auto_add_no`` set to ``True`` is added to every model that inherits from ``SmartModel``
+
+    .. attribute:: changed_at
+
+        This model field is same case as ``created_at`` with the difference that there is used ``auto_now=True`` therefore every date and time of change is stored here.
+
 SmartMeta
 ---------
 
@@ -174,7 +181,7 @@ SmartMeta similar like django meta is defined inside ``SmartModel`` and is acces
 
     .. attribute:: is_cleaned_pre_save
 
-        Defines if ``SmartModel`` will be automatically validated before saving. Default value is ``True``
+        Defines if ``SmartModel`` will be automatically validated before saving. Default value is ``False``
 
     .. attribute:: is_cleaned_post_save
 
@@ -203,6 +210,19 @@ SmartMeta similar like django meta is defined inside ``SmartModel`` and is acces
         class SmartMeta:
             is_cleaned_pre_save = True
             is_cleaned_pre_delete = True
+
+The default configuration for all smart models can be defined in your settings with setting `CHAMBER_SMART_MODEL_ATTRIBUTES`:
+
+.. code:: python
+
+    CHAMBER_SMART_MODEL_ATTRIBUTES = {
+        'is_cleaned_pre_save': True,
+        'is_cleaned_post_save': False,
+        'is_cleaned_pre_delete': False,
+        'is_cleaned_post_delete': False,
+        'is_save_atomic': False,
+        'is_delete_atomic': False,
+    }
 
 
 Unknown
